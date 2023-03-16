@@ -1,6 +1,6 @@
 package main.controller;
 
-import main.service.QueueService;
+import main.database.service.QueueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

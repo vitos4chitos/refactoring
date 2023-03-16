@@ -1,6 +1,6 @@
 package main.controller;
 
-import main.service.InstanceService;
+import main.database.service.InstanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,12 +33,6 @@ public class InstanceController {
 
     @PostMapping("{user-login}/nextLevel")
     String transferToTheNextLevel(@PathVariable("login") String login) {
-        boolean a = instanceService.transferToTheNextLevel(login);
-        if(a){
-            return "{\"token\": \"true\"}";
-        }
-        else{
-            return "{\"token\": \"false\"}";
-        }
+        return instanceService.transferToTheNextLevel(login);
     }
 }
