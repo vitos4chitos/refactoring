@@ -1,6 +1,6 @@
 package main.configuration;
 
-import main.database.service.CustomerUserDetailService;
+import main.database.service.entity_service.CustomerUserDetailService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

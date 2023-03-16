@@ -2,76 +2,29 @@ package main.database.service;
 
 import lombok.RequiredArgsConstructor;
 import main.database.entity.*;
-import main.database.repository.*;
+import main.database.service.entity_service.*;
 import main.entity.BackQueue;
 import main.entity.FirstUser;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class QueueService {
+public class QueueAgregatorService {
 
-
-    private final QueueRepository queueRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final OfficialRepository officialRepository;
-    private final UserRepository userRepository;
-    private final SignatureRepository signatureRepository;
-    private final DocumentRepository documentRepository;
-    private final ParameterRepository parameterRepository;
     private final UserService userService;
-    private final OfficialService officialService;
     private final DocumentService documentService;
-    private final ParameterService parameterService;
-    private final SignaturesService signaturesService;
     private final TypeOfDocumentService typeOfDocumentService;
-
-    public Queue getQueueById(Long id) {
-        return queueRepository.getQueueById(id);
-    }
-
-    public Schedule getScheduleById(Long id) {
-        return scheduleRepository.getScheduleById(id);
-    }
-
-    public List<Queue> getAllQueueByUserId(Long id) {
-        List<Queue> queues = queueRepository.getQueuesByUserId(id);
-        if (queues != null) {
-            return queues;
-        }
-        return new ArrayList<>();
-    }
-    public List<Queue> getQueueByOfficialUsername(String login) {
-        Official official = officialRepository.getOfficialByLogin(login);
-        if (official != null) {
-            List<Queue> queue = queueRepository.getQueueByOfficialId(official.getId());
-            if (queue != null)
-                return queue;
-        }
-        return new ArrayList<>();
-    }
-
-    public User getFirstUserFromQueueByOfficialUsername(String login) {
-        List<Queue> queue = this.getQueueByOfficialUsername(login).stream().filter(e -> e.getPlace() == 1).collect(Collectors.toList());
-        Long firstUserId = queue.get(0).getUserId();
-        User user = userRepository.getUserById(firstUserId);
-        if (user != null)
-            return user;
-        return new User();
-    }
-
-    public Boolean advanceQueue(Long officialId) {
-        return queueRepository.advanceQueue(officialId);
-    }
+    private final ParameterService parameterService;
+    private final OfficialService officialService;
+    private final QueueService queueService;
+    private final SignaturesService signaturesService;
 
     public List<BackQueue> getOfficialQueue(String login){
         System.out.println(login);
-        List<Queue> queues = getQueueByOfficialUsername(login);
+        List<Queue> queues = queueService.getQueueByOfficialUsername(login);
         List<BackQueue> qu = new ArrayList<>();
         BackQueue bq;
         for (Queue queue : queues) {
@@ -89,7 +42,7 @@ public class QueueService {
 
     public FirstUser getFirstUserFromOfficialQueue(String login){
         System.out.println(login);
-        User user = getFirstUserFromQueueByOfficialUsername(login);
+        User user = queueService.getFirstUserFromQueueByOfficialUsername(login);
         FirstUser firstUser = new FirstUser();
         firstUser.setId(user.getId());
         firstUser.setName(user.getName());
@@ -101,7 +54,7 @@ public class QueueService {
         Parameter parameter;
         for (Document document : documentList) {
             if (document.getParameters_id() != null) {
-                parameter = parameterService.getByParametrId(document.getParameters_id());
+                parameter = parameterService.getByParameterId(document.getParameters_id());
                 parameters.add(parameter);
             }
         }

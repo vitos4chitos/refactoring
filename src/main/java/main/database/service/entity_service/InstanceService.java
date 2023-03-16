@@ -1,11 +1,10 @@
-package main.database.service;
+package main.database.service.entity_service;
 
 import lombok.RequiredArgsConstructor;
 import main.database.entity.*;
 import main.database.repository.*;
 import main.entity.UserInfo;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Optional;
 
@@ -14,18 +13,13 @@ import java.util.Optional;
 public class InstanceService {
 
     private final ProsecutorRepository prosecutorRepository;
-    private final OfficialRepository officialRepository;
     private final InstanceRepository instanceRepository;
     private final CheckerRepository checkerRepository;
-    private final UserRepository userRepository;
 
     private final UserService userService;
 
     public Prosecutor getProsecutorId(Long id) {
         return prosecutorRepository.getProsecutorById(id);
-    }
-    public Official getOfficialById(Long id) {
-        return officialRepository.getOfficialById(id);
     }
 
     public Instance getInstanceId(Long id) {
@@ -37,7 +31,7 @@ public class InstanceService {
     }
 
     public Boolean transferToTheNextLevelCheck(String login) {
-        Optional<User> user = userRepository.getUserByLogin(login);
+        Optional<User> user = userService.getUserByLogin(login);
         if (user.isPresent()) {
             User user1 = user.get();
             return instanceRepository.transferToTheNextLevel(user1.getId());

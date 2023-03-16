@@ -1,4 +1,4 @@
-package main.database.service;
+package main.database.service.entity_service;
 
 import main.controller.SecurityController;
 import main.database.entity.User;
@@ -37,5 +37,13 @@ public class UserService {
     public User getUserById(long id){
         User user = userRepository.getUserById(id);
         return user;
+    }
+
+    public Optional<User> getUserByLogin(String login){
+        return userRepository.getUserByLogin(login);
+    }
+
+    public void save(User user) {
+        userRepository.save(user);
     }
 }

@@ -2,12 +2,13 @@ package main.controller;
 
 
 import main.database.entity.*;
-import main.database.service.*;
+import main.database.service.DocumentAgregatorService;
+import main.database.service.entity_service.*;
 import main.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
+import java.lang.annotation.Documented;
 import java.util.List;
 
 @RestController
@@ -16,6 +17,22 @@ public class DocumentController {
 
     @Autowired
     DocumentService documentService;
+    @Autowired
+    StatusService statusService;
+    @Autowired
+    TypeOfDocumentService typeOfDocumentService;
+    @Autowired
+    SignaturesService signaturesService;
+    @Autowired
+    ProductionService productionService;
+    @Autowired
+    PrivilegesService privilegesService;
+
+    @Autowired
+    ParameterService parameterService;
+
+    @Autowired
+    DocumentAgregatorService documentAgregatorService;
 
 
     @GetMapping("{id}")
@@ -23,64 +40,64 @@ public class DocumentController {
         return documentService.getDocumentById(id).toString();
     }
 
-    @GetMapping("/{id}/status")
-    String getStatusOfDocumentById(@PathVariable("id") Long id) {
-        return documentService.getStatusById(id).toString();
+    @GetMapping("status/{id}")
+    String getStatusById(@PathVariable("id") Long id) {
+        return statusService.getStatusById(id).toString();
     }
 
-    @GetMapping("/{id}/type")
+    @GetMapping("/type/{id}")
     String getTypeOfDocumentById(@PathVariable("id") Long id) {
-        return documentService.getTypeOfDocumentId(id).toString();
+        return typeOfDocumentService.getById(id).toString();
     }
 
-    @GetMapping("/{id}/signatures")
-    String getSignaturesByDocumentId(@PathVariable("id") Long id) {
-        return documentService.getSignatureById(id).toString();
+    @GetMapping("/signature/{id}")
+    String getSignaturesById(@PathVariable("id") Long id) {
+        return signaturesService.getSignatureById(id).toString();
     }
 
 
-    @GetMapping("/{id}/production")
+    @GetMapping("/producation/{id}")
     String getProductionByDocumentId(@PathVariable("id") Long id) {
-        return documentService.getProductionById(id).toString();
+        return productionService.getProductionById(id).toString();
     }
 
-    @GetMapping("/{id}/privileges")
+    @GetMapping("/privileges/{id}")
     String getPrivilegesByDocumentId(@PathVariable("id")  Long id) {
-        return documentService.getPrivilegesById(id).toString();
+        return privilegesService.getPrivilegesById(id).toString();
     }
 
-    @GetMapping("/{id}/parameter")
+    @GetMapping("/parameter/{id}")
     String getParameterByDocumentId(@PathVariable("id") Long id) {
-        return documentService.getParameterById(id).toString();
+        return parameterService.getByParameterId(id).toString();
     }
 
     @GetMapping()
     List<BackVals> getUsersDocuments(@RequestParam("login") String login) {
-       return documentService.getUsersDocuments(login);
+       return documentAgregatorService.getUsersDocuments(login);
     }
 
     @GetMapping("/{id}/info")
     DockInfo getDockInfoByDocumentId(@RequestParam("id") Long id){
-        return documentService.getDockInfoByDocumentId(id);
+        return documentAgregatorService.getDockInfoByDocumentId(id);
     }
 
     @GetMapping("/{id}/TypeOfDocumentWhichNotExist")
     List<TypeOfDocument> getTypeOfDocumentByUserIdWhichNotExist(@PathVariable("id") Long id) {
-        return documentService.getNameTypeOfDocumentsWhichNotExistInDocuments(id);
+        return documentAgregatorService.getNameTypeOfDocumentsWhichNotExistInDocuments(id);
     }
 
     @PostMapping ()
     String addDocument(@RequestBody DockumentToAdd document){
-        return documentService.addDocument(document);
+        return documentAgregatorService.addDocument(document);
     }
 
     @GetMapping("{login}/reference}")
     List<Reference> getAllReference(@PathVariable("login") String login){
-        return documentService.getAllReference(login);
+        return documentAgregatorService.getAllReference(login);
     }
     @PostMapping ("/document-priority")
     String addDocumentPrior(@RequestBody DocumentToAddPrior document){
-        return documentService.addDocumentPrior(document);
+        return documentAgregatorService.addDocumentPrior(document);
     }
 
 

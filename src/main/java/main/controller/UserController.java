@@ -1,12 +1,8 @@
 package main.controller;
 
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import main.database.service.InstanceService;
+import main.database.service.entity_service.InstanceService;
 import main.entity.UserInfo;
-import main.database.service.CustomerUserDetailService;
-import main.database.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

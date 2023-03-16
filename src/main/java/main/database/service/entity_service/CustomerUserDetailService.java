@@ -1,5 +1,6 @@
-package main.database.service;
+package main.database.service.entity_service;
 
+import lombok.RequiredArgsConstructor;
 import main.database.entity.Official;
 import main.database.entity.User;
 import main.database.repository.OfficialRepository;
@@ -24,15 +25,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final OfficialRepository officialRepository;
-
-    public CustomerUserDetailService(UserRepository userRepository, OfficialRepository officialRepository) {
-        this.userRepository = userRepository;
-        this.officialRepository = officialRepository;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {

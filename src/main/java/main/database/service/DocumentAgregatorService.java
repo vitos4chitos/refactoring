@@ -2,117 +2,141 @@ package main.database.service;
 
 import lombok.RequiredArgsConstructor;
 import main.database.entity.*;
-import main.database.repository.*;
+import main.database.service.entity_service.*;
 import main.entity.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class DocumentService {
+public class DocumentAgregatorService {
 
-    private final DocumentRepository documentRepository;
-    private final StatusRepository statusRepository;
-    private final TypeOfDocumentRepository typeOfDocumentRepository;
-    private final SignatureRepository signatureRepository;
-    private final ProductionRepository productionRepository;
-    private final PrivilegesRepository privilegesRepository;
-    private final ParameterRepository parameterRepository;
-    private final BookkeepingRepository bookkeepingRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
+    private final DocumentService documentService;
     private final TypeOfDocumentService typeOfDocumentService;
+    private final ProductionService productionService;
+    private final BookkeepingService bookkeepingService;
+    private final ParameterService parameterService;
+    private final OfficialService officialService;
+    private final SignaturesService signatureService;
+    private final QueueService queueService;
     private final PrivilegesService privilegesService;
     private final SignaturesService signaturesService;
-    private final OfficialService officialService;
     private final StatusService statusService;
-    private final ParameterService parameterService;
 
-    public Document getDocumentById(Long id) {
-        return documentRepository.getDocumentById(id);
-    }
-    public Status getStatusById(Long id) {
-        return statusRepository.getStatusById(id);
-    }
+    public boolean buyDocument(String login, Long bookkeepingId, String name) {
+        Bookkeeping bookkeeping = bookkeepingService.getBookkeepingById(bookkeepingId);
+        BigDecimal userMoney, productionCost;
+        if (userService.getUserByLogin(login).isPresent()) {
+            User user =userService.getUserByLogin(login).get();
+            userMoney = user.getMoney();
+            TypeOfDocument typeOfDocument = typeOfDocumentService.getByName(name);
+            //System.out.println(bookkeepingId);
+            //System.out.println(typeOfDocument.getId());
+            //System.out.println(documentRepository.calculateSale(user.getId()));
+            Production production = productionService.getProductionByBookkeepingIdAndAndTypeOfDocumentId(bookkeepingId, typeOfDocument.getId());
+            System.out.println("До" + production.getCost());
+            System.out.println("Скидка" + documentService.calculateSale(user.getId()));
+            productionCost = BigDecimal.valueOf(production.getCost().doubleValue() * ((100 - documentService.calculateSale(user.getId())) / 100.0));
+            System.out.println("После" + productionCost);
+            if (userMoney.subtract(productionCost).doubleValue() >= 0) {
+                Signature signatureOne = new Signature();
+                Signature signatureTwo = new Signature();
+                Signature signatureThree = new Signature();
+                Parameter parameterOne = new Parameter();
+                parameterOne.setStatus(false);
 
-    public TypeOfDocument getTypeOfDocumentId(Long id) {
-        return typeOfDocumentRepository.getTypeOfDocumentById(id);
-    }
+                user.setMoney(userMoney.subtract(productionCost));
+                userService.save(user);
 
-    public Signature getSignatureById(Long id) {
-        return signatureRepository.getSignatureById(id);
-    }
+                parameterService.save(parameterOne);
 
-    public Production getProductionById(Long id) {
-        return productionRepository.getProductionById(id);
-    }
 
-    public Privileges getPrivilegesById(Long id) {
-        return privilegesRepository.getPrivilegesById(id);
-    }
+                List<Official> officials = officialService.getOfficialByInstanceId(user.getInstanceId());
+                System.out.println(officials.size());
+                if (officials.size() >= 3) {
+                    signatureOne.setIsSubscribed(false);
+                    signatureOne.setOfficialId(officials.get(0).getId());
+                    signatureOne.setParametersId(parameterOne.getId());
 
-    public Parameter getParameterById(Long id) {
-        return parameterRepository.getParameterById(id);
-    }
+                    signatureTwo.setIsSubscribed(false);
+                    signatureTwo.setOfficialId(officials.get(1).getId());
+                    signatureTwo.setParametersId(parameterOne.getId());
 
-    public Bookkeeping getBookkeepingById(Long id) {
-        return bookkeepingRepository.getBookkeepingById(id);
-    }
+                    signatureThree.setIsSubscribed(false);
+                    signatureThree.setOfficialId(officials.get(2).getId());
+                    signatureThree.setParametersId(parameterOne.getId());
 
-    public List<Document> getAllDocumentsByUserId(Long userId) {
-        List<Document> documentList = documentRepository.getDocumentsByUserId(userId);
-        if (documentList != null) {
-            return documentList;
-        }
-        return new ArrayList<>();
-    }
+                    signatureService.save(signatureOne);
+                    signatureService.save(signatureTwo);
+                    signatureService.save(signatureThree);
 
-    public List<TypeOfDocument> getAllTypeOfDocumentByInstanceId(Long id) {
-        List<TypeOfDocument> typeOfDocuments = typeOfDocumentRepository.getTypeOfDocumentsByInstanceId(id);
-        if (typeOfDocuments != null) {
-            return typeOfDocuments;
-        }
-        return new ArrayList<>();
-    }
+                    production.setQuantity(production.getQuantity() - 1);
 
-    public List<TypeOfDocument> getNameTypeOfDocumentsWhichNotExistInDocuments(Long userId) {
-        User user = userRepository.getUserById(userId);
-        Long instanceId = user.getInstanceId();
-        List<TypeOfDocument> typeOfDocuments = this.getAllTypeOfDocumentByInstanceId(instanceId);
-        List<TypeOfDocument> ans = new ArrayList<>();
-        for (TypeOfDocument td : typeOfDocuments) {
-            boolean flag = documentRepository.existsDocumentByTypeOfDocumentIdAndUserId(td.getId(), userId);
-            System.out.println(flag);
-            if (!flag) {
-                ans.add(td);
+                    productionService.save(production);
+
+                    Document document = new Document();
+                    document.setTypeOfDocumentId(typeOfDocument.getId());
+                    java.sql.Date date = new java.sql.Date(Calendar.getInstance().getTime().getTime());
+                    document.setDateOfIssue(date);
+                    document.setUserId(user.getId());
+                    document.setValidity(null);
+                    document.setIssuedByWhom("Замок");
+                    document.setParameters_id(parameterOne.getId());
+                    documentService.save(document);
+
+                    queueService.putInQueue(user.getId(), officials.get(0).getId());
+                    queueService.putInQueue(user.getId(), officials.get(1).getId());
+                    queueService.putInQueue(user.getId(), officials.get(2).getId());
+
+                    return true;
+                }
             }
         }
-        return ans;
+        return false;
+
     }
 
-    public String addDocument(Document document) {
-        try {
-            documentRepository.save(document);
-            return "{\"token\": \"true\"}";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "{\"token\": \"err\"}";
+    public List<BackVals> getDocuments(String login) {
+        long id = userService.getUserId(login);
+        List<Document> documents = documentService.getAllDocumentsByUserId(id);
+        long inst = userService.getUserById(id).getInstanceId();
+        List<TypeOfDocument> typeOfDocuments = typeOfDocumentService.getTypes(inst);
+        List<BackVals> backVals = new ArrayList<>();
+        for (TypeOfDocument typeOfDocument : typeOfDocuments) {
+            if (typeOfDocument.getPrivilegesId() == 1 && !typeOfDocument.getName().equals("Пасспорт") &&
+                    !typeOfDocument.getName().equals("Свидетельство о рождении") &&
+                    !typeOfDocument.getName().equals("Права на вождение автомобиля") &&
+                    !typeOfDocument.getName().equals("Справка с места работы")) {
+                boolean flag = false;
+                for (Document document : documents) {
+                    if (document.getTypeOfDocumentId().equals(typeOfDocument.getId())) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag) {
+                    BackVals bv = new BackVals();
+                    bv.setName(typeOfDocument.getName());
+                    backVals.add(bv);
+                }
+            }
         }
+        for(int i = 0; i < backVals.size(); i++){
+            System.out.println(backVals.get(i).getName());
+        }
+        System.out.println();
+        return backVals;
     }
 
-    public String addForReview(Long parameterId) {
-        documentRepository.addForReview(parameterId);
-        return "{\"token\": \"true\"}";
-    }
-
-    public List<BackVals> getUsersDocuments(@RequestParam("login") String id) {
+    public List<BackVals> getUsersDocuments(String id) {
         long idd = userService.getUserId(id);
-        List<Document> documents = getAllDocumentsByUserId(idd);
+        List<Document> documents = documentService.getAllDocumentsByUserId(idd);
         List<BackVals> backVals = new ArrayList<>();
         if (documents != null) {
             for(int i = 0; i < documents.size(); i++){
@@ -133,7 +157,7 @@ public class DocumentService {
     public DockInfo getDockInfoByDocumentId(Long id){
         System.out.println(id);
         DockInfo dockInfo = new DockInfo();
-        Document document = getDocumentById(id);
+        Document document = documentService.getDocumentById(id);
         dockInfo.setId(document.getId());
         dockInfo.setByWho(document.getIssuedByWhom());
         dockInfo.setIssue(document.getDateOfIssue());
@@ -177,6 +201,21 @@ public class DocumentService {
         return dockInfo;
     }
 
+    public List<TypeOfDocument> getNameTypeOfDocumentsWhichNotExistInDocuments(Long userId) {
+        User user = userService.getUserById(userId);
+        Long instanceId = user.getInstanceId();
+        List<TypeOfDocument> typeOfDocuments = typeOfDocumentService.getAllTypeOfDocumentByInstanceId(instanceId);
+        List<TypeOfDocument> ans = new ArrayList<>();
+        for (TypeOfDocument td : typeOfDocuments) {
+            boolean flag = documentService.existsDocumentByTypeOfDocumentIdAndUserId(td.getId(), userId);
+            System.out.println(flag);
+            if (!flag) {
+                ans.add(td);
+            }
+        }
+        return ans;
+    }
+
     public String addDocument(DockumentToAdd document){
         Document document1 = new Document();
         long id = userService.getUserId(document.getLogin());
@@ -194,18 +233,18 @@ public class DocumentService {
                 id2 = typeOfDocument.getId();
         }
         document1.setTypeOfDocumentId(id2);
-        return addDocument(document1);
+        return documentService.addDocument(document1);
     }
 
     public List<Reference> getAllReference(String login){
         System.out.println(login);
         long idd = userService.getUserId(login);
         List<Reference> references = new ArrayList<>();
-        List<Document> documents = getAllDocumentsByUserId(idd);
+        List<Document> documents = documentService.getAllDocumentsByUserId(idd);
         for (Document document : documents) {
             System.out.println(document.getId());
             if (document.getParameters_id() != null) {
-                Parameter parameter = parameterService.getByParametrId(document.getParameters_id());
+                Parameter parameter = parameterService.getByParameterId(document.getParameters_id());
                 TypeOfDocument typeOfDocument = typeOfDocumentService.getById(document.getTypeOfDocumentId());
                 Reference reference = new Reference();
                 reference.setId(parameter.getId());
@@ -279,6 +318,6 @@ public class DocumentService {
         System.out.println(document.getName());
         document1.setIssuedByWhom(document.getBywhom());
         document1.setParameters_id(null);
-        return addDocument(document1);
+        return documentService.addDocument(document1);
     }
 }
