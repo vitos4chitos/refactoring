@@ -66,11 +66,6 @@ public class SecurityController {
         return customerUserDetailService.addUser(us);
     }
 
-    @GetMapping("/auth")
-    public String getAuth() {
-        return "{\"auth\": \"auth\"}";
-    }
-
     @Data
     @NoArgsConstructor
     public static class AuthUser {
@@ -78,7 +73,7 @@ public class SecurityController {
         String password;
     }
 
-    @PostMapping(value = "/authO")
+    @PostMapping(value = "/auth-official")
     public String getLoginPageO(@RequestBody AuthUser user) {
         System.out.println("****");
         System.out.println(user.login);

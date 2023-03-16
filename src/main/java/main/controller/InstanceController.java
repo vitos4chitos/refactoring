@@ -2,10 +2,7 @@ package main.controller;
 
 import main.service.InstanceService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/instance")
@@ -14,28 +11,28 @@ public class InstanceController {
     @Autowired
     InstanceService instanceService;
 
-    @GetMapping("/prosecutor/get")
-    String getProsecutor(@RequestParam Long id) {
+    @GetMapping("/prosecutor/{id}")
+    String getProsecutor(@PathVariable("id") Long id) {
         return instanceService.getProsecutorId(id).toString();
     }
 
-    @GetMapping("/official/get")
-    String getOfficial(@RequestParam Long id) {
+    @GetMapping("/official/{id}")
+    String getOfficial(@PathVariable("id") Long id) {
         return instanceService.getOfficialById(id).toString();
     }
 
-    @GetMapping("/instance/get")
-    String getInstance(@RequestParam Long id) {
+    @GetMapping("/instance/{id}")
+    String getInstance(@PathVariable("id") Long id) {
         return instanceService.getInstanceId(id).toString();
     }
 
-    @GetMapping("/checker/get")
-    String getChecker(@RequestParam Long id) {
+    @GetMapping("/checker/{id}")
+    String getChecker(@PathVariable("id") Long id) {
         return instanceService.getCheckerId(id).toString();
     }
 
-    @GetMapping("/nextLevel")
-    String transferToTheNextLevel(@RequestParam String login) {
+    @PostMapping("{user-login}/nextLevel")
+    String transferToTheNextLevel(@PathVariable("login") String login) {
         boolean a = instanceService.transferToTheNextLevel(login);
         if(a){
             return "{\"token\": \"true\"}";

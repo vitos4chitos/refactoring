@@ -40,49 +40,44 @@ public class DocumentController {
     ParameterService parameterService;
 
 
-    @GetMapping("/document/get")
-    String sayDocument(@RequestParam Long id) {
+    @GetMapping("{id}")
+    String getDocumentById(@PathVariable("id") Long id) {
         return documentService.getDocumentById(id).toString();
     }
 
-    @GetMapping("/document/status/get")
-    String getStatus(@RequestParam Long id) {
+    @GetMapping("/{id}/status")
+    String getStatusOfDocumentById(@PathVariable("id") Long id) {
         return documentService.getStatusById(id).toString();
     }
 
-    @GetMapping("/document/type_of_document/get")
-    String getTypeOfDocument(@RequestParam Long id) {
+    @GetMapping("/{id}/type")
+    String getTypeOfDocumentById(@PathVariable("id") Long id) {
         return documentService.getTypeOfDocumentId(id).toString();
     }
 
-    @GetMapping("/document/signatures/get")
-    String getSignatures(@RequestParam Long id) {
+    @GetMapping("/{id}/signatures")
+    String getSignaturesByDocumentId(@PathVariable("id") Long id) {
         return documentService.getSignatureById(id).toString();
     }
 
 
-    @GetMapping("/document/production/get")
-    String getProduction(@RequestParam Long id) {
+    @GetMapping("/{id}/production")
+    String getProductionByDocumentId(@PathVariable("id") Long id) {
         return documentService.getProductionById(id).toString();
     }
 
-    @GetMapping("/document/privileges/get")
-    String getPrivileges(@RequestParam Long id) {
+    @GetMapping("/{id}/privileges")
+    String getPrivilegesByDocumentId(@PathVariable("id")  Long id) {
         return documentService.getPrivilegesById(id).toString();
     }
 
-    @GetMapping("/document/parameter/get")
-    String getParameter(@RequestParam Long id) {
+    @GetMapping("/{id}/parameter")
+    String getParameterByDocumentId(@PathVariable("id") Long id) {
         return documentService.getParameterById(id).toString();
     }
 
-    @GetMapping("/document/bookkeeping/get")
-    String getBookkeeping(@RequestParam Long id) {
-        return documentService.getBookkeepingById(id).toString();
-    }
-
-    @GetMapping("/getAll")
-    List<BackVals> getDocumentsById(@RequestParam("login") String id) {
+    @GetMapping()
+    List<BackVals> getUsersDocuments(@RequestParam("login") String id) {
         long idd = userService.getUserId(id);
         List<Document> documents = documentService.getAllDocumentsByUserId(idd);
         List<BackVals> backVals = new ArrayList<>();
@@ -102,8 +97,8 @@ public class DocumentController {
         return backVals;
     }
 
-    @GetMapping("/getDock")
-    DockInfo getDockInfo(@RequestParam("id") Long id){
+    @GetMapping("/{id}/info")
+    DockInfo getDockInfoByDocumentId(@RequestParam("id") Long id){
         System.out.println(id);
         DockInfo dockInfo = new DockInfo();
         Document document = documentService.getDocumentById(id);
@@ -150,18 +145,12 @@ public class DocumentController {
         return dockInfo;
     }
 
-
-//    @GetMapping("/getPod")
-//    List<BackValsTypes> getPodpicy(@RequestParam("login") String id) {
-//
-//    }
-
-    @GetMapping("/document/getTypeOfDocumentByUserIdWhichNotExist")
-    List<TypeOfDocument> getTypeOfDocumentByUserIdWhichNotExist(@RequestParam Long id) {
+    @GetMapping("/{id}/TypeOfDocumentWhichNotExist")
+    List<TypeOfDocument> getTypeOfDocumentByUserIdWhichNotExist(@PathVariable("id") Long id) {
         return documentService.getNameTypeOfDocumentsWhichNotExistInDocuments(id);
     }
 
-    @PostMapping ("/addDocument")
+    @PostMapping ()
     String addDocument(@RequestBody DockumentToAdd document){
         Document document1 = new Document();
         long id = userService.getUserId(document.getLogin());
@@ -182,8 +171,8 @@ public class DocumentController {
         return documentService.addDocument(document1);
     }
 
-    @GetMapping("/getAllReference")
-    List<Reference> getAllReference(@RequestParam String login){
+    @GetMapping("{login}/reference}")
+    List<Reference> getAllReference(@PathVariable("login") String login){
         System.out.println(login);
         long idd = userService.getUserId(login);
         List<Reference> references = new ArrayList<>();
@@ -218,7 +207,7 @@ public class DocumentController {
         }
         return references;
     }
-    @PostMapping ("/addDocumentPrior")
+    @PostMapping ("/document-priority")
     String addDocumentPrior(@RequestBody DocumentToAddPrior document){
         long id1 = -1;
         long id = userService.getUserId(document.getLogin());
@@ -269,8 +258,8 @@ public class DocumentController {
     }
 
 
-    @GetMapping("/addForReview")
-    public String addForReview(@RequestParam Long parameterId) {
+    @PostMapping("{id}/review")
+    public String addForReview(@PathVariable("id") Long parameterId) {
         documentService.addForReview(parameterId);
         return "{\"token\": \"true\"}";
     }

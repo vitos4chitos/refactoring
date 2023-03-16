@@ -6,10 +6,7 @@ import main.entity.TypeOfDocument;
 import main.entity.*;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +30,8 @@ public class BookeepingController {
     ProductionService productionService;
 
 
-    @GetMapping("/getAll")
-    List<BackVals> getDocumentsById(@RequestParam("login") String login) {
+    @GetMapping("/{login}")
+    List<BackVals> getDocuments(@PathVariable("login") String login) {
         long id = userService.getUserId(login);
         List<Document> documents = documentService.getAllDocumentsByUserId(id);
         long inst = userService.getUserById(id).getInstanceId();
@@ -67,14 +64,14 @@ public class BookeepingController {
     }
 
 
-    @GetMapping("/buy")
+    @PutMapping("/buy")
     public boolean buyDocument(@RequestParam String login, @RequestParam Long bookkeepingId, @RequestParam String name) {
         System.out.println(name + " " + login + " " + bookkeepingId);
         return bookkeepingService.buyDocument(login, bookkeepingId, name);
     }
 
-    @GetMapping("/getShops")
-    List<Shop> getShops(@RequestParam("name") String name){
+    @GetMapping("/shop/{document-name}")
+    List<Shop> getShopsByDocumentName(@PathVariable("document-name") String name){
         System.out.println(name);
         TypeOfDocument typeOfDocument = typeOfDocumentService.getByName(name);
         Long id = typeOfDocument.getId();
@@ -95,5 +92,10 @@ public class BookeepingController {
             shops.add(shop);
         }
         return shops;
+    }
+
+    @GetMapping()
+    String getBookkeeping(@RequestParam Long id) {
+        return documentService.getBookkeepingById(id).toString();
     }
 }

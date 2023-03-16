@@ -22,38 +22,17 @@ public class UserController {
     @Autowired
     CustomerUserDetailService customerUserDetailService;
 
-
-    @GetMapping("/user/id")
-    String getUserId(@RequestParam String login){
-        return userService.getUserId(login).toString();
-    }
-
-    @PostMapping("/check")
-    String checkUser(@RequestBody AuthUser user){
-        UserDetails securityUser = customerUserDetailService.loadUserByUsername(user.login);
-        if (securityUser != null) {
-            if (securityUser.getPassword().equals(user.password)) {
-                System.out.println("User exist");
-                return "{\"token\": \"true\"}";
-            }
-            return "{\"token\": \"bad\"}";
-        } else {
-            System.out.println("User doesn't exist");
-            System.out.println("POST request ... ");
-            return "{\"token\": \"bad\"}";
-        }
-    }
-
-    @GetMapping("/instance")
-    UserInfo getInstance(@RequestParam String login){
+    @GetMapping("/{login}/instance")
+    UserInfo getInstance(@PathVariable("login") String login){
         Long user = userService.getUserId(login);
-        if(user != -1){
+        if(user == -1){
             return null;
         }
         else{
             UserInfo userInfo = new UserInfo();
             userInfo.setId(userService.getUserById(user).getInstance_id());
             userInfo.setMoney(userService.getUserById(user).getMoney());
+            System.out.println(userInfo.getId());
             return userInfo;
         }
 

@@ -5,10 +5,7 @@ import main.entity.*;
 import main.repository.DocumentRepository;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,42 +36,18 @@ public class QueueController {
     @Autowired
     TypeOfDocumentService typeOfDocumentService;
 
-    @GetMapping("/queue/get")
-    String getQueue(@RequestParam Long id) {
+    @GetMapping("{id}")
+    String getQueue(@PathVariable("id") Long id) {
         return queueService.getQueueById(id).toString();
     }
 
-    @GetMapping("/queue/schedule/get")
-    String getSchedule(@RequestParam Long id) {
-        return queueService.getScheduleById(id).toString();
-    }
-
-    @GetMapping("/queue/getAll")
-    List<Queue> getQueueAllByUserId(@RequestParam Long id) {
+    @GetMapping("/user/{id}")
+    List<Queue> getUsersQueues(@PathVariable("id") Long id) {
         return queueService.getAllQueueByUserId(id);
     }
 
-    @GetMapping("/getUserQueue")
-    List<QueueBack> getQueueByUser(@RequestParam String login){
-        List<QueueBack> queueBacks = new ArrayList<>();
-        long id = userService.getUserId(login);
-        List<Queue> queues = queueService.getAllQueueByUserId(id);
-        for(int i = 0; i < queues.size(); i++){
-            QueueBack qb = new QueueBack();
-            qb.setId(queues.get(i).getId());
-            Official official = officialService.getOfficialById(queues.get(i).getOfficialId());
-            qb.setName(official.getName() + " " + official.getSurname());
-            System.out.println(qb.getName());
-            qb.setPlace(queues.get(i).getPlace());
-            qb.setPriority(queues.get(i).getPriority());
-            qb.setTime(official.getTimeOfReceipts().toString());
-            queueBacks.add(qb);
-        }
-        return queueBacks;
-    }
-
-    @GetMapping("official")
-    public List<BackQueue> getOfficialQueue(@RequestParam String login) {
+    @GetMapping("/official/{login}")
+    public List<BackQueue> getOfficialQueue(@PathVariable("login") String login) {
         System.out.println(login);
         List<Queue> queues = queueService.getQueueByOfficialUsername(login);
         List<BackQueue> qu = new ArrayList<>();
@@ -93,8 +66,8 @@ public class QueueController {
 
     }
 
-    @GetMapping("/firstUser")
-    public FirstUser getFirstUserFromOfficialQueue(@RequestParam String login) {
+    @GetMapping("/official/{login}/first-user")
+    public FirstUser getFirstUserFromOfficialQueue(@PathVariable("login") String login) {
         System.out.println(login);
         User user = queueService.getFirstUserFromQueueByOfficialUsername(login);
         FirstUser firstUser = new FirstUser();
@@ -132,8 +105,8 @@ public class QueueController {
         return firstUser;
     }
 
-    @GetMapping("/queue/advance")
-    public Boolean getAdvanceQueue(@RequestParam Long officialId) {
+    @GetMapping("/official/{login}/advance")
+    public Boolean getAdvanceQueue(@PathVariable("login") Long officialId) {
         return queueService.advanceQueue(officialId);
     }
 }

@@ -30,7 +30,7 @@ public class SignaturesController {
     @Autowired
     QueueService queueService;
 
-    @PostMapping("/makeSign")
+    @PostMapping()
     Boolean makeSign(@RequestBody Sign sign){
         System.out.println(sign.loginOff);
         Long idSign;
