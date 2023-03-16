@@ -1,0 +1,151 @@
+create table "privileges"
+(
+    privileges_id bigserial primary key,
+    sale integer not null check (sale >= 0 and sale <= 100),
+    priority bigint not null check ( priority >= 0 ),
+    coeff_sign bigint not null check ( coeff_sign >= 0 )
+);
+
+create table "parameters"
+(
+    parameters_id bigserial primary key ,
+    status boolean not null
+);
+
+
+create table "instance"
+(
+    instance_id bigserial primary key,
+    name text not null
+);
+
+create table "types"
+(
+    type_of_document_id bigserial primary key,
+    name varchar(30) not null ,
+    privileges_id bigint,
+    instance_id bigint not null,
+    foreign key (instance_id) references "instance" (instance_id) on delete restrict ,
+    foreign key (privileges_id) references "privileges" (privileges_id)
+);
+
+create table "users"
+(
+    user_id bigserial primary key,
+	login varchar(15) not null unique,
+	password varchar(30) not null,
+    name varchar(15) not null,
+    surname varchar(30) not null,
+    money numeric not null,
+    time_result timestamp not null,
+	role varchar,
+	active boolean,
+    instance_id bigint not null,
+    foreign key (instance_id) references "instance" (instance_id)
+);
+
+create table "document"
+(
+    document_id bigserial primary key,
+    type_of_document_id bigint not null,
+    user_id bigint not null,
+    date_of_issue date not null,
+    validity date,
+    issued_by_whom varchar(45) not null,
+    parameters_id bigint unique,
+    foreign key (user_id) references "users" (user_id) on delete restrict ,
+    foreign key (type_of_document_id) references "types" (type_of_document_id),
+    foreign key (parameters_id) references "parameters" (parameters_id) on delete cascade,
+    check ( validity is null or validity >= date_of_issue)
+);
+
+create table "schedule"
+(
+    schedule_id bigserial primary key,
+    time_start time not null check (time_start >= '10:00:00'::time),
+    time_finish time not null check (time_finish <= '22:00:00'::time),
+    check ( time_start < time_finish )
+);
+
+create table "prosecutor"
+(
+    prosecutor_id bigserial primary key ,
+    instance_id bigint not null,
+    schedule_id bigint,
+    foreign key (instance_id) references "instance" (instance_id) on delete restrict ,
+    foreign key (schedule_id) references "schedule" (schedule_id) on delete set null
+);
+
+create table "checker"
+(
+    checker_id bigserial primary key,
+    time interval not null,
+    max_quantity bigint not null check ( max_quantity > 0 ),
+    prosecutor_id bigint not null,
+    foreign key (prosecutor_id) references "prosecutor" (prosecutor_id) on delete restrict
+);
+
+create table "status"
+(
+    status_id bigserial primary key,
+    is_valid boolean not null,
+    parameter_id bigint not null unique,
+    checker_id bigint not null,
+    foreign key (parameter_id) references "parameters" (parameters_id) on delete cascade,
+    foreign key (checker_id) references "checker" (checker_id)
+);
+
+create table "bookkeeping"
+(
+    bookkeeping_id bigserial primary key,
+    quantity bigint not null check (quantity > 0),
+    schedule_id bigint,
+    foreign key (schedule_id) references "schedule" (schedule_id) on delete set null
+);
+
+create table "production"
+(
+    production_id bigserial primary key,
+    bookkeeping_id bigint not null,
+    quantity bigint not null check ( quantity >= 0 ),
+    type_of_document_id bigint not null,
+    cost numeric not null ,
+    time interval not null,
+    foreign key (bookkeeping_id) references "bookkeeping" (bookkeeping_id),
+    foreign key (type_of_document_id) references "types" (type_of_document_id)
+);
+
+create table "official"
+(
+    official_id bigserial primary key,
+	login varchar(15) not null unique,
+	password varchar(30) not null,
+    name varchar(15) not null,
+    surname varchar(30) not null,
+    time_of_receipts interval not null,
+    instance_id bigint,
+    schedule_id bigint,
+    foreign key (instance_id) references "instance" (instance_id) on delete restrict ,
+    foreign key (schedule_id) references "schedule" (schedule_id) on delete set null
+);
+
+create table "queue"
+(
+    queue_id bigserial primary key,
+    official_id bigint not null,
+    user_id bigint not null,
+    place bigint not null check ( place > 0 ),
+    priority bigint not null,
+    foreign key (official_id) references "official" (official_id),
+    foreign key (user_id) references "users" (user_id)
+);
+
+create table "signatures"
+(
+    signature_id bigserial primary key,
+    official_id bigint not null,
+    parameters_id bigint not null,
+    is_subscribed boolean not null,
+    foreign key (official_id) references "official" (official_id),
+    foreign key (parameters_id) references "parameters" (parameters_id) on delete cascade
+);

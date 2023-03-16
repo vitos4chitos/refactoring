@@ -1,0 +1,169 @@
+CREATE or replace function verification_of_signatures(bigint) returns bool as
+    $$BEGIN
+        if((SELECT count(*) from "signatures" where parameters_id = $1 and is_subscribed = false) = 0) then
+            update "parameters"
+            set status = true
+            where parameters_id = $1;
+            Raise notice 'successfully updated';
+        else
+             raise notice 'not enough signatures';
+             return false;
+        end if;
+	return true;
+    end;
+$$LANGUAGE plpgsql;
+
+CREATE or replace function add_for_review(bigint) returns bool as
+    $$
+        declare
+            flag boolean[];
+            inst bigint;
+            pull_checker bigint[];
+            lenght2 bigint;
+            ch_id bigint;
+            col bigint;
+            status bigint;
+        begin
+            col = (SELECT count(*) from "parameters" where parameters_id = $1)::bigint;
+            if(col = 0) then
+                raise exception 'there is no parameter';
+            else
+                flag = ARRAY(SELECT "parameters".status from "parameters" where parameters_id = $1);
+                if(NOT flag[1]) then
+                    raise exception 'update the status of signatures';
+                else
+                    status = (select count(*) from "status" join "parameters" P on P.parameters_id = "status".parameter_id where parameters_id = $1)::bigint;
+                    if(status = 0) then
+                        inst = (select instance_id from "document"
+                            join "types" TOD on "document".type_of_document_id = TOD.type_of_document_id where parameters_id = $1)::bigint;
+                        pull_checker = ARRAY(select checker_id from "checker" join "prosecutor" P on "checker".prosecutor_id = P.prosecutor_id where instance_id = inst);
+                        lenght2 = (array_length(pull_checker, 1))::bigint;
+                        ch_id = 0;
+                        for j in 1..lenght2
+                            loop
+                                if((select count(*) from "status" where is_valid = false and checker_id = pull_checker[j]) < (select max_quantity from "checker" where checker_id = pull_checker[j])) then
+                                    ch_id = pull_checker[j];
+                                end if;
+                        end loop;
+                        if(NOT(ch_id = 0)) then
+                            insert into "status" (is_valid, parameter_id, checker_id) VALUES (false, $1, ch_id);
+                            raise notice 'successfully added for verification';
+                        else
+                            raise exception 'there are no available employees at this number';
+                        end if;
+                    else
+                        raise exception 'already under review';
+                    end if;
+                end if;
+            end if;
+	    return true;
+        end;
+$$LANGUAGE plpgsql;
+
+create or replace function transfer_to_the_next_level(bigint) returns bool as
+    $$
+    DECLARE
+        pull_parameters bigint;
+        pull_status bigint;
+    begin
+        pull_parameters = (select count(*) from "parameters"
+            join "document" D on "parameters".parameters_id = D.parameters_id
+            join "users" U on U.user_id = D.user_id
+            join "types" TOD on D.type_of_document_id = TOD.type_of_document_id
+            where D.user_id = $1 and TOD.instance_id = (Select instance_id from "users" where "users".user_id = $1) and "parameters".status = false);
+        if(pull_parameters = 0) then
+            pull_status = (select count(*) from "parameters"
+            join "document" D on "parameters".parameters_id = D.parameters_id
+            join "users" U on U.user_id = D.user_id
+            join "types" TOD on D.type_of_document_id = TOD.type_of_document_id
+            join "status" S on "parameters".parameters_id = S.parameter_id
+            where D.user_id = $1 and TOD.instance_id = (Select instance_id from "users" where "users".user_id = $1) and S.is_valid = false);
+            if(pull_status = 0) then
+                raise notice 'you can transfer to the next instance';
+		UPDATE "users"
+                SET instance_id = instance_id + 1
+                where user_id = $1;
+                return true;
+            else
+                raise notice 'not all references have been checked yet';
+                return false;
+            end if;
+        else
+            raise notice 'not all certificates are signed';
+            return false;
+        end if;
+    end;
+
+$$LANGUAGE plpgsql;
+
+create or replace function advance_the_queue(bigint) returns bool as
+    $$BEGIN
+        Delete from "queue"
+            where place = 1 and official_id = $1;
+        UPDATE "queue"
+        SET place = place - 1
+        where place > 0 and official_id = $1;
+        RAISE NOTICE 'queue moved';
+        return true;
+    end;
+$$ LANGUAGE plpgsql;
+
+create or replace function calculate_priority(bigint) returns bigint as
+$$
+    declare
+        pr bigint;
+    begin
+        pr = (Select SUM(priv.priority) from "document" docs
+                join "types" typed on typed.type_of_document_id = docs.type_of_document_id
+                join "privileges" priv on priv.privileges_id = typed.privileges_id
+                where docs.user_id = $1)::bigint;
+        return pr;
+    end;
+$$ LANGUAGE plpgsql;
+
+
+
+create or replace function put_in_queue(bigint, bigint)returns bigint as
+$$
+    DECLARE
+        prior bigint;
+        plac bigint;
+        u_id bigint;
+        of_id bigint;
+    BEGIN
+        u_id = $1;
+        of_id = $2;
+        prior = calculate_priority(u_id);
+        plac = (select min(place) from "queue" where prior > priority and official_id = of_id);
+        if(plac is not null) then
+            UPDATE "queue"
+            SET place = place + 1
+            where place >= plac and official_id = of_id;
+            Insert INTO "queue" (official_id, user_id, place, priority)  values(of_id, u_id, plac, prior);
+            RAISE NOTICE 'queue updated';
+        else
+            plac = (select max(place) from "queue" where official_id = of_id);
+            if(plac is not null) then
+                plac = plac + 1;
+            else
+                plac = 1;
+            end if;
+            Insert INTO "queue" (official_id, user_id, place, priority) values(of_id, u_id, plac, prior);
+            RAISE NOTICE 'queue updated';
+        end if;
+        return plac;
+end;
+$$LANGUAGE plpgsql;
+
+create or replace function calculate_sale(bigint) returns bigint as
+$$
+    declare
+        pr bigint;
+    begin
+        pr = (Select MAX(priv.sale) from "document" docs
+                join "types" typed on typed.type_of_document_id = docs.type_of_document_id
+                join "privileges" priv on priv.privileges_id = typed.privileges_id
+                where docs.user_id = $1)::bigint;
+        return pr;
+    end;
+$$ LANGUAGE plpgsql;

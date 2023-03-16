@@ -1,0 +1,90 @@
+CREATE or REPLACE function check_time_result() returns trigger as
+$$
+BEGIN
+    IF NEW.time_result <= (SELECT NOW() + interval '3 hours') THEN
+        raise exception '% this time cannot be used as the result time', NEW.time_result;
+    ELSE
+        return NEW;
+    END IF;
+end;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_check_time_result
+    BEFORE INSERT
+    ON "users"
+    FOR EACH ROW
+EXECUTE PROCEDURE check_time_result();
+
+CREATE or REPLACE function check_docs_type() returns trigger as
+$$
+    BEGIN
+        IF (Select count(*) from "document"
+             where user_id = NEW.user_id and type_of_document_id = NEW.type_of_document_id) > 0 THEN
+             raise exception '% such a document already exists', NEW.user_id;
+         Else
+             return NEW;
+         end if;
+    end;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_check_docs_type
+    BEFORE INSERT
+    ON "document"
+    FOR EACH ROW
+EXECUTE PROCEDURE check_docs_type();
+
+CREATE or REPLACE function check_office_hours() returns trigger as
+$$
+    BEGIN
+        if NEW.time_finish - interval '8 hours' > NEW.time_start then
+            raise exception '% the number of working hours cannot exceed 8', NEW;
+        ELSE
+            return NEW;
+        end if;
+    end;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_check_office_hours
+    BEFORE INSERT
+    ON "schedule"
+    FOR EACH ROW
+EXECUTE PROCEDURE check_office_hours();
+
+CREATE or REPLACE function check_parametrs() returns trigger as
+$$
+    BEGIN
+        if NEW.type_of_document_id > 3 and NEW.parameters_id is null then
+            raise exception '% reference parameter cannot be null', NEW;
+        ELSE
+            if new.type_of_document_id <= 3 and New.parameters_id is not null then
+                raise exception '% document cannot have parameters', NEW;
+            Else
+                return NEW;
+            end if;
+        end if;
+    end;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_check_parametrs
+    BEFORE INSERT
+    ON "document"
+    FOR EACH ROW
+EXECUTE PROCEDURE check_parametrs();
+
+CREATE or REPLACE function check_max_status() returns trigger as
+$$
+    BEGIN
+        IF (SELECT max_quantity from "checker" where checker_id = NEW.checker_id) < (SELECT count(*) from "status"
+            where checker_id = NEW.checker_id and is_valid = false) + 1 then
+            raise exception '% search of the checked references', NEW.checker_id;
+        ELSE
+            return NEW;
+        end if;
+    end;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_check_max_status
+    BEFORE INSERT
+    ON "status"
+    FOR EACH ROW
+EXECUTE PROCEDURE check_max_status();

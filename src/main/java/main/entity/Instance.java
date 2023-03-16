@@ -1,0 +1,37 @@
+package main.entity;
+
+import lombok.*;
+import org.hibernate.Hibernate;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import java.util.Objects;
+
+@Entity(name = "Instance")
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
+public class Instance {
+
+    @Id
+    @Column(name = "instance_id")
+    private Long id;
+
+    @Column(name = "name")
+    private String name;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        Instance instance = (Instance) o;
+        return id != null && Objects.equals(id, instance.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+}

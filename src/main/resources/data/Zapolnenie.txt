@@ -1,0 +1,591 @@
+CREATE OR REPLACE FUNCTION generate_privileges() RETURNS VOID AS
+$$
+declare
+    sale_possible_new  int = 0;
+    priority_new       bigint = 0;
+    coefficient_sign_new     bigint = 0;
+begin
+    sale_possible_new = round(random() * 100);
+    priority_new = round(random() * 1000);
+    coefficient_sign_new = round(random() * 1000);
+    INSERT INTO "privileges" (sale, priority, coeff_sign)
+    VALUES (sale_possible_new, priority_new, coefficient_sign_new);
+end;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION generate_privileges_default() RETURNS VOID AS
+$$
+declare
+    sale_possible_new  int = 0;
+    priority_new       bigint = 0;
+    coefficient_sign_new     bigint = 0;
+begin
+    INSERT INTO "privileges" (sale, priority, coeff_sign)
+    VALUES (sale_possible_new, priority_new, coefficient_sign_new);
+end;
+$$ LANGUAGE plpgsql;
+
+select generate_privileges_default(); -- work
+select generate_privileges() FROM generate_series(1, 500);  -- work
+
+CREATE OR REPLACE FUNCTION generate_instance() RETURNS VOID AS
+$$
+    declare
+        brands_of_instance  varchar[] = '{Староста, Отделение управления деревни, Психиатрическая лечебница, Полиция, Братство,' ||
+                                        ' Регулятор, Поликлиника, Почта, Отделение управления замка, Юридическая контора, Церковь}';
+        index               int = 0;
+        new_name            varchar;
+    begin
+        index = floor(random() * array_length(brands_of_instance, 1) + 1)::int;
+        new_name = brands_of_instance[index];
+        insert into "instance" (name) values (new_name);
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_instance() FROM generate_series(1, 500); -- work
+
+CREATE OR REPLACE FUNCTION generate_type_of_document() RETURNS VOID AS
+$$
+    declare
+        type_doc    varchar[] = '{Справка разрешения, Договор, Подписной лист, Медецинская справка, Юридическая справка}';
+        index       bigint = 0;
+        new_name    varchar;
+        inst_id     bigint[];
+        length int = 0;
+        length2 bigint = 0;
+        some_ind_1 bigint = 1;
+        some_char_1 varchar = '1';
+        some_ind_2 bigint = 1;
+        some_char_2 varchar = '1';
+        some_ind_3 bigint = 1;
+        some_char_3 varchar = '1';
+        some_ind_4 bigint = 1;
+        some_char_4 varchar = '1';
+        some_ind_5 bigint = 1;
+        some_char_5 varchar = '1';
+    begin
+        inst_id = ARRAY(select instance_id from "instance")::bigint[];
+        length2 = (array_length(inst_id, 1))::bigint;
+        for i in 1..length2
+        loop
+            length = round(random() * 4) + 1;
+            for j in 1..length
+            loop
+                index = floor(random() * array_length(type_doc, 1) + 1)::int;
+                if index = 1 then
+                    new_name = type_doc[index] || ' ' || some_char_1;
+                    some_ind_1 = some_ind_1 + 1;
+                    some_char_1 = some_ind_1::varchar;
+                else if index = 2 then
+                    new_name = type_doc[index] || ' ' || some_char_2;
+                    some_ind_2 = some_ind_2 + 1;
+                    some_char_2 = some_ind_2::varchar;
+                else if index = 3 then
+                    new_name = type_doc[index] || ' ' || some_char_3;
+                    some_ind_3 = some_ind_3 + 1;
+                    some_char_3 = some_ind_3::varchar;
+                else if index = 4 then
+                    new_name = type_doc[index] || ' ' || some_char_4;
+                    some_ind_4 = some_ind_4 + 1;
+                    some_char_4 = some_ind_4::varchar;
+                else
+                    new_name = type_doc[index] || ' ' || some_char_5;
+                    some_ind_5 = some_ind_5 + 1;
+                    some_char_5 = some_ind_5::varchar;
+                end if;
+                end if;
+                end if;
+                end if;
+                insert into "types" (name, privileges_id, instance_id)
+                values (new_name, 1, inst_id[i]);
+            end loop;
+        end loop;
+    end;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION generate_type_of_document_default() RETURNS VOID AS
+$$
+    begin
+        insert into "types" (name, privileges_id, instance_id) values ('Пасспорт', 1, 1);
+        insert into "types" (name, privileges_id, instance_id) values ('Свидетельство о рождении', 1, 1);
+        insert into "types" (name, privileges_id, instance_id) values ('Права на вождение автомобиля', 1, 1);
+        insert into "types" (name, privileges_id, instance_id) values ('Справка с места работы', 1, 1);
+    end;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION generate_type_of_document_benefits() RETURNS VOID AS
+$$
+    declare
+        type_doc    varchar[] = '{Почетный гражданин страны, Инвалидность, Ветеран боевых действий}';
+        index       bigint = 0;
+        new_name    varchar;
+        p_id        bigint[];
+        index_p     bigint;
+        some_ind_1 bigint = 1;
+        some_char_1 varchar = '1';
+        some_ind_2 bigint = 1;
+        some_char_2 varchar = '1';
+        some_ind_3 bigint = 1;
+        some_char_3 varchar = '1';
+        length int = 0;
+    begin
+        length = round(random() * 100);
+        for i in 1..length
+        loop
+            index = floor(random() * array_length(type_doc, 1) + 1)::int;
+            if index = 1 then
+                new_name = type_doc[index] || ' ' || some_char_1;
+                some_ind_1 = some_ind_1 + 1;
+                some_char_1 = some_ind_1::varchar;
+            else if index = 2 then
+               new_name = type_doc[index] || ' ' || some_char_2;
+                some_ind_2 = some_ind_2 + 1;
+                some_char_2 = some_ind_2::varchar;
+            else
+                new_name = type_doc[index] || ' ' || some_char_3;
+                some_ind_3 = some_ind_3 + 1;
+                some_char_3 = some_ind_3::varchar;
+            end if;
+            end if;
+            p_id = ARRAY(select privileges_id from "privileges")::int[];
+            index_p = floor(random() * array_length(p_id, 1) + 1)::int;
+            index_p = p_id[index_p];
+            insert into "types" (name, privileges_id, instance_id)
+            values (new_name, index_p, 1);
+        end loop;
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_type_of_document_default(); --work
+select generate_type_of_document_benefits(); --work
+select generate_type_of_document(); --work
+
+CREATE or replace function generate_schedule() returns void as
+    $$
+    declare
+    time_startt time;
+    time_finissh time;
+    time_of_work interval;
+    index   int = 1;
+    pool_times time[] = '{10:00:00, 10:30:00, 11:00:00, 11:30:00, 12:00:00, 12:30:00, 13:00:00, 13:30:00, 14:00:00, 14:30:00, ' ||
+                        '15:00:00, 15:30:00, 16:00:00, 16:30:00, 17:00:00, 17:30:00, 18:00:00, 18:30:00, 19:00:00, 19:30:00, 20:00:00, 20:30:00, ' ||
+                        '21:00:00, 21:30:00}';
+    BEGIN
+        time_of_work = random() * (interval '7 hours' + interval '59 minutes') + interval '1 minute';
+        index = floor(random() * array_length(pool_times, 1) + 1)::int;
+        time_startt = pool_times[index];
+        if(time_startt + time_of_work > '22:00:00' or time_startt + time_of_work < '10:00:00') then
+            time_finissh = '22:00:00';
+        else
+            time_finissh = time_startt + time_of_work;
+        end if;
+        insert into "schedule" (time_start, time_finish) values (time_startt, time_finissh);
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_schedule() FROM generate_series(1, 500); -- work
+
+CREATE or replace  function  generate_officials() returns void as
+$$
+        declare
+            name_u           varchar(15);
+            pull_names      varchar[] = '{Михаил, Марк, Мирон, Андрей, Павел, Анатолий, Николай, Виктор, Кирилл, Богдан, Никита, Владимир, ' ||
+                                        'Парфен, Карл}';
+            surname_u         varchar(30);
+            pull_surnames   varchar[] = '{Козлов, Мишанин, Николаев, Попов, Троцкий, Маркс, Капронов, Ксенофонтов, Иванов, Лазарев, ' ||
+                                        'Пересвятов, Краснов, Серов, Голубков, Перенов, Датагрипов, Хохлов, Серов, Салов, Пис, Работов, Роботов, ' ||
+                                        'Умнов, Поляков, Коков, Мореходов, Перескопов}';
+
+            pull_names_w    varchar[] = '{Елена, Мария, Светлана, Михалина, Юлия, Анастасия, Елизавета, Софья, Соня, София, Анна, Анет, Ким}';
+            pull_surnames_w varchar[] = '{Камова, Пулева, Булева, Комарова, Тамова, Тарханова, Мирославова, Лютикова, Козлова, Мишанина, ' ||
+                                        'Лампова, Постгресова, Механова, Плеханова, Сын Зю, Перефракторава, Рефакторова, Мониторова, Усатова, Нью Белосова, Найкова, Таймстампова}';
+            sex int;
+            inst_id  bigint[];
+            length bigint;
+            length2 bigint;
+            index_n int;
+            index_s int;
+            pull_sch bigint[];
+            index_sch bigint;
+            time_r interval;
+            sch_id bigint;
+			lg bigint;
+        begin
+			lg = 1;
+            inst_id = ARRAY(select instance_id from "instance")::bigint[];
+            pull_sch = ARRAY(select schedule_id from "schedule")::bigint[];
+            length = (array_length(inst_id, 1))::bigint;
+             for i in 1..length
+                loop
+                 length2 = round(random() * 2) + 3;
+                 for j in 1..length2
+                 loop
+                    sex = round(random()) + 1;
+                    if(sex = 1) then
+                        index_n = floor(random() * array_length(pull_names, 1) + 1)::int;
+                        index_s = floor(random() * array_length(pull_surnames, 1) + 1)::int;
+                        name_u = pull_names[index_n];
+                        surname_u = pull_surnames[index_s];
+                    else
+                        index_n = floor(random() * array_length(pull_names_w, 1) + 1)::int;
+                        index_s = floor(random() * array_length(pull_surnames_w, 1) + 1)::int;
+                        name_u = pull_names_w[index_n];
+                        surname_u = pull_surnames_w[index_s];
+                    end if;
+                    index_sch = floor(random() * array_length(pull_sch, 1) + 1)::bigint;
+                    sch_id = pull_sch[index_sch];
+                    time_r = random() * interval '59 minutes' + interval '1 minutes';
+                    insert into "official" (login, password, name, surname, time_of_receipts, instance_id, schedule_id) values
+                     (lg, lg, name_u, surname_u, time_r, inst_id[i], sch_id);
+					 lg = lg + 1;
+                end loop;
+            end loop;
+        end;
+$$ LANGUAGE plpgsql;
+
+select generate_officials(); --work
+
+CREATE or replace  function  generate_prosecutor() returns void as
+    $$
+    declare
+        inst_id  bigint[];
+        pull_sch bigint[];
+        sch_id bigint;
+        length bigint;
+        index_sch bigint;
+    BEGIN
+        inst_id = ARRAY(select instance_id from "instance")::bigint[];
+        pull_sch = ARRAY(select schedule_id from "schedule")::bigint[];
+        length = (array_length(inst_id, 1))::bigint;
+        for i in 1..length
+            loop
+                index_sch = floor(random() * array_length(pull_sch, 1) + 1)::bigint;
+                sch_id = pull_sch[index_sch];
+                insert into "prosecutor" (instance_id, schedule_id) VALUES (inst_id[i], sch_id);
+            end loop;
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_prosecutor(); -- work
+
+CREATE or replace function generate_checker() returns void as
+    $$
+    declare
+        time_i interval;
+        qual bigint;
+        process_id bigint[];
+        length bigint;
+        length2 int;
+    BEGIN
+        process_id = ARRAY(select prosecutor_id from "prosecutor")::bigint[];
+        length = (array_length(process_id, 1))::bigint;
+        for i in 1..length
+            loop
+                length2 = round(random() * 9) + 1;
+                for j in 1..length2
+                    loop
+                        qual = floor(random() * 10) + 1;
+                        time_i = random() * interval '23 hours' + interval '1 hours';
+                        insert into "checker" (time, max_quantity, prosecutor_id) values (time_i, qual, process_id[i]);
+                    end loop;
+            end loop;
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_checker(); --work
+
+CREATE or replace function generate_bookkeeping() returns void as
+    $$
+    declare
+        qual bigint;
+        pull_sch bigint[];
+        index_sch bigint;
+        sch_id bigint;
+    begin
+        pull_sch = ARRAY(select schedule_id from "schedule")::bigint[];
+        qual = floor(random() * 10) + 1;
+        index_sch = floor(random() * array_length(pull_sch, 1) + 1)::bigint;
+        sch_id = pull_sch[index_sch];
+        insert into "bookkeeping" (quantity, schedule_id) VALUES (qual, sch_id);
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_bookkeeping() FROM generate_series(1, 500); --work
+
+CREATE or replace function generate_production() returns void as
+$$
+    declare
+        pull_bk bigint[];
+        quanlity bigint;
+        q bigint;
+        type_of_doc_pull bigint[];
+        costt numeric;
+        time_int interval;
+        length bigint;
+        type_id bigint;
+    BEGIN
+        pull_bk = ARRAY(select bookkeeping_id from "bookkeeping")::bigint[];
+        type_of_doc_pull = ARRAY(select type_of_document_id from "types" where (privileges_id = 1
+                                and name != 'Пасспорт' and name != 'Свидетельство о рождении' and name != 'Права на вождение автомобиля'
+                                 and name != 'Справка с места работы'))::bigint[];
+        length = (array_length(pull_bk, 1))::bigint;
+        for i in 1..length
+            loop
+                q = (select quantity from "bookkeeping" where bookkeeping_id = pull_bk[i])::bigint;
+                for j in 1..q
+                    loop
+                        quanlity = round(random() * 100);
+                        time_int = random() * interval '1 days' + interval '10 minutes';
+                        costt = round(random() * 1000);
+                        type_id = floor(random() * array_length(type_of_doc_pull, 1) + 1)::bigint;
+                        if((select count(*) from "production" where (bookkeeping_id = pull_bk[i] and type_of_document_id = type_of_doc_pull[type_id])) = 0) then
+                            insert into "production" (bookkeeping_id, quantity, type_of_document_id, cost, time) VALUES (pull_bk[i], quanlity, type_of_doc_pull[type_id], costt, time_int);
+                        end if;
+                    end loop;
+            end loop;
+    end;
+$$ LANGUAGE plpgsql;
+
+select generate_production();
+
+create or replace function generate_basic_user() returns void as
+    $$
+    declare
+        name_u           varchar(15);
+        pull_names      varchar[] = '{Михаил, Марк, Мирон, Андрей, Павел, Анатолий, Николай, Виктор, Кирилл, Богдан, Никита, Владимир, ' ||
+                                        'Парфен, Карл}';
+        surname_u         varchar(30);
+        pull_surnames   varchar[] = '{Козлов, Мишанин, Николаев, Попов, Троцкий, Маркс, Капронов, Ксенофонтов, Иванов, Лазарев, ' ||
+                                        'Пересвятов, Краснов, Серов, Голубков, Перенов, Датагрипов, Хохлов, Серов, Салов, Пис, Работов, Роботов, ' ||
+                                        'Умнов, Поляков, Коков, Мореходов, Перескопов}';
+
+        pull_names_w    varchar[] = '{Елена, Мария, Светлана, Михалина, Юлия, Анастасия, Елизавета, Софья, Соня, София, Анна, Анет, Ким}';
+        pull_surnames_w varchar[] = '{Камова, Пулева, Булева, Комарова, Тамова, Тарханова, Мирославова, Лютикова, Козлова, Мишанина, ' ||
+                                        'Лампова, Постгресова, Механова, Плеханова, Сын Зю, Перефракторава, Рефакторова, Мониторова, Усатова, Нью Белосова, Найкова, Таймстампова}';
+        sex int;
+        mon numeric;
+        time_res timestamp;
+        index_n int;
+        index_s int;
+    BEGIN
+	for i in 1..2000
+	loop
+        mon = round(random() * 10000);
+        time_res = now() + random()*interval '1 years' + interval '3 hours' + interval '1 hours';
+        sex = round(random()) + 1;
+        if(sex = 1) then
+            index_n = floor(random() * array_length(pull_names, 1) + 1)::int;
+            index_s = floor(random() * array_length(pull_surnames, 1) + 1)::int;
+            name_u = pull_names[index_n];
+            surname_u = pull_surnames[index_s];
+        else
+            index_n = floor(random() * array_length(pull_names_w, 1) + 1)::int;
+            index_s = floor(random() * array_length(pull_surnames_w, 1) + 1)::int;
+            name_u = pull_names_w[index_n];
+            surname_u = pull_surnames_w[index_s];
+        end if;
+        insert into "users" (login, password, name, surname, money, time_result, role, active, instance_id)  values
+                     (i, i, name_u, surname_u, mon, time_res, 'user', true,  1);
+	end loop;
+    end;
+$$  LANGUAGE plpgsql;
+
+select generate_basic_user();
+
+create or replace function generate_document_basic() returns void as
+$$
+    declare
+        type_pull_basic bigint[];
+        type_pull_priveleges bigint[];
+        basic bigint;
+        priv bigint;
+        us bigint;
+        date_of_i1 date;
+        date_of_i2 date;
+        valid date;
+        name_d          bigint;
+        pull_names      varchar[] = '{Москва, Самара, Владивосток, Владикавказ, Париж, Вашингтон, Санкт-Петербург, Киев, Брест,' ||
+                                    'Белград, Казань}';
+        pull_user bigint[];
+        som bigint;
+        som2 bigint;
+        som3 bigint;
+        length bigint;
+    begin
+       type_pull_basic = ARRAY(select type_of_document_id from "types" where type_of_document_id < 4)::bigint[];
+       type_pull_priveleges = ARRAY(select type_of_document_id from "types" where privileges_id > 1)::bigint[];
+       pull_user = ARRAY(select user_id from "users")::bigint[];
+       length = (array_length(pull_user, 1))::bigint;
+       for i in 1..length
+            loop
+                som = round(random()) + 1;
+                som2 = floor(random() * array_length(type_pull_basic, 1) + 1)::bigint;
+                som3  = floor(random() * array_length(type_pull_priveleges, 1) + 1)::bigint;
+                date_of_i1 = '2014-01-01'::date + random() * interval '8 years';
+                date_of_i2 = '2014-01-01'::date + random() * interval '60 years';
+                name_d = floor(random() * array_length(pull_names, 1) + 1)::bigint;
+                valid = now()::date + random() * interval '10 years' + interval '1 year';
+                us = pull_user[i];
+                basic = type_pull_basic[som2];
+                priv = type_pull_priveleges[som3];
+                insert into "document" (type_of_document_id, user_id, date_of_issue, validity, issued_by_whom, parameters_id)
+                values (basic, us, date_of_i1, valid, pull_names[name_d], null);
+                if(som = 1) then
+                    insert into "document" (type_of_document_id, user_id, date_of_issue, validity, issued_by_whom, parameters_id)
+                values (priv, us, date_of_i2, null, pull_names[name_d], null);
+                end if;
+            end loop;
+    end;
+$$  LANGUAGE plpgsql;
+
+select generate_document_basic(); --work
+
+
+create or replace function distribution_of_documents() returns void as
+$$
+    declare
+        instance_array  bigint;
+        instance_random_index   bigint;
+        instance_random bigint;
+        user_array_id  bigint[];
+        type_of_documentId bigint[];
+        length  bigint;
+        length2 bigint;
+        date_of_i1 date;
+        parameter   bigint;
+        valid date;
+        name_d  bigint;
+    begin
+        instance_array = (select count(*) from "instance");
+        user_array_id = ARRAY(select user_id from "users");
+        length = (array_length(user_array_id, 1))::bigint;
+        for i in 1..length
+            loop
+                instance_random_index = floor(random() * instance_array + 1)::bigint;
+                instance_random = instance_random_index;
+                type_of_documentId = ARRAY(select type_of_document_id from "types" where instance_id = instance_random and type_of_document_id > 4 and privileges_id = 1);
+                length2 = (array_length(type_of_documentId, 1))::bigint;
+                update "users" set instance_id = instance_random where user_id = user_array_id[i];
+                for j in 1..length2
+                    loop
+                    date_of_i1 = '2014-01-01'::date + random() * interval '8 years';
+                    insert into "parameters" (status) values (false);
+                    parameter = (select max(parameters_id) from "parameters");
+                    insert into "document" (type_of_document_id,
+                                            user_id,
+                                            date_of_issue, validity, issued_by_whom, parameters_id)
+                    values (type_of_documentId[j], user_array_id[i], date_of_i1, null, 'Замок', parameter);
+                    end loop;
+            end loop;
+    end
+$$  LANGUAGE plpgsql;
+
+select distribution_of_documents(); --work
+
+create or replace function official_some_function() returns void as
+$$
+    declare
+        officialId bigint[];
+        rnd bigint;
+        parametersId bigint[];
+        length  bigint;
+        flag    bool;
+    begin
+        parametersId = ARRAY(select parameters_id from "parameters");
+        length = (array_length(parametersId, 1))::bigint;
+        for i in 1..length
+        loop
+            officialId = ARRAY(select official_id from "parameters"
+                        join "document" on "parameters".parameters_id = "document".parameters_id
+                        join "types" on "document".type_of_document_id = "types".type_of_document_id
+                        join "official" on "official".instance_id = "types".instance_id
+                        where "parameters".parameters_id = parametersId[i]);
+            rnd = floor(random() * 3 + 1)::bigint;
+            for j in 1..rnd
+                loop
+                    flag = random() > 0.5;
+                    insert into "signatures" (official_id, parameters_id, is_subscribed)
+                    values (officialId[j], parametersId[i], flag);
+                end loop;
+        end loop;
+    end
+$$  LANGUAGE plpgsql;
+
+select official_some_function(); --work
+
+create or replace function generate_queue() returns void as
+    $$
+        declare
+            pull_users bigint[];
+            plac bigint;
+            pull_parameters bigint[];
+            pull_officcials bigint [];
+            lenght bigint;
+            lenght2 bigint;
+            lenght3 bigint;
+        begin
+            pull_users = ARRAY(select user_id from "users");
+            lenght =  (array_length(pull_users, 1))::bigint;
+            for i in 1..lenght
+                loop
+                     pull_parameters = ARRAY(select "parameters".parameters_id from "parameters" join "document" D on "parameters".parameters_id = D.parameters_id
+                        where user_id = pull_users[i]);
+                     lenght2 = (array_length(pull_parameters, 1))::bigint;
+                     for j in 1 ..lenght2
+                        loop
+                             pull_officcials = ARRAY(SELECT official_id from "signatures" where parameters_id = pull_parameters[j] and is_subscribed = false);
+                             lenght3 = (array_length(pull_officcials, 1))::bigint;
+                             if(lenght3 is null) then
+                                 Update "parameters"
+                                 set status = true
+                                 where parameters_id = pull_parameters[j];
+                            else
+                                for k in 1..lenght3
+                                    loop
+                                        plac = (select put_in_queue(pull_users[i], pull_officcials[k]));
+                                    end loop;
+                             end if;
+                         end loop;
+
+                end loop;
+        end;
+
+$$  LANGUAGE plpgsql;
+
+select generate_queue(); --work
+
+create or replace function generate_status() returns void as
+    $$
+    DECLARE
+        pull_checker bigint[];
+        pull_param bigint[];
+        lenght bigint;
+        lenght2 bigint;
+        inst bigint;
+        ch_id bigint;
+        flag boolean;
+    Begin
+        pull_param = ARRAY(select parameters_id from "parameters" where status = true);
+        lenght = (array_length(pull_param, 1))::bigint;
+        for i in 1..lenght
+            loop
+                inst = (select instance_id from "document"
+                    join "types" TOD on "document".type_of_document_id = TOD.type_of_document_id where parameters_id = pull_param[i])::bigint;
+                pull_checker = ARRAY(select checker_id from "checker" join "prosecutor" P on "checker".prosecutor_id = P.prosecutor_id where instance_id = inst);
+                lenght2 = (array_length(pull_checker, 1))::bigint;
+                ch_id = 0;
+                for j in 1..lenght2
+                    loop
+                        if((select count(*) from "status" where is_valid = false and checker_id = pull_checker[j]) < (select max_quantity from "checker" where checker_id = pull_checker[j])) then
+                            ch_id = pull_checker[j];
+                        end if;
+                    end loop;
+                if(NOT(ch_id = 0)) then
+                    flag = random() > 0.5;
+                    insert into "status" (is_valid, parameter_id, checker_id) VALUES (flag, pull_param[i], ch_id);
+                end if;
+            end loop;
+    end;
+    $$ LANGUAGE plpgsql;
+
+select generate_status();
