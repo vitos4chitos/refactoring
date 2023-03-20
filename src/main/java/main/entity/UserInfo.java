@@ -1,29 +1,16 @@
 package main.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
-public class UserInfo {
+@AllArgsConstructor
+@Builder
+@Getter
+@Setter
+public class UserInfo extends BaseAnswer{
     private Long id;
     private BigDecimal money;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public BigDecimal getMoney() {
-        return money;
-    }
-
-    public void setMoney(BigDecimal money) {
-        this.money = money;
-    }
 }

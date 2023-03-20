@@ -1,46 +1,32 @@
 package main.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.List;
 
 @Data
+@AllArgsConstructor
+@Builder
+@Setter
+@Getter
 @NoArgsConstructor
-public class BackQueue {
-    private Long id;
-    private String name;
+public class BackQueue extends BaseAnswer{
+    private List<User> queue;
 
-    public Long getId() {
-        return id;
+    public void addUser(User user){
+        queue.add(user);
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @Data
+    @AllArgsConstructor
+    @Builder
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    public static class User{
+        private Long id;
+        private String name;
+        private Long prior;
+        private Long place;
     }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Long getPrior() {
-        return prior;
-    }
-
-    public void setPrior(Long prior) {
-        this.prior = prior;
-    }
-
-    public Long getPlace() {
-        return place;
-    }
-
-    public void setPlace(Long place) {
-        this.place = place;
-    }
-
-    private Long prior;
-    private Long place;
 }

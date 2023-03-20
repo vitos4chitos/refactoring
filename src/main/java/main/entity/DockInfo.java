@@ -1,85 +1,27 @@
 package main.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import main.database.entity.Signature;
+import main.database.entity.Status;
 
 import java.sql.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
-public class DockInfo {
+@AllArgsConstructor
+@Setter
+@Getter
+@Builder
+public class DockInfo extends BaseAnswer{
     private Long id;
     private String name;
     private String lgot;
     private Date validity;
 
-    public String getPodtver() {
-        return podtver;
-    }
+    private List<Signature> signatures;
 
-    public void setPodtver(String podtver) {
-        this.podtver = podtver;
-    }
-
-    private String podtver;
-
-    public String getPod() {
-        return pod;
-    }
-
-    public void setPod(String pod) {
-        this.pod = pod;
-    }
-
-    private String pod;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLgot() {
-        return lgot;
-    }
-
-    public void setLgot(String lgot) {
-        this.lgot = lgot;
-    }
-
-    public Date getValidity() {
-        return validity;
-    }
-
-    public void setValidity(Date validity) {
-        this.validity = validity;
-    }
-
-    public Date getIssue() {
-        return issue;
-    }
-
-    public void setIssue(Date issue) {
-        this.issue = issue;
-    }
-
-    public String getByWho() {
-        return byWho;
-    }
-
-    public void setByWho(String byWho) {
-        this.byWho = byWho;
-    }
+    private Status status;
 
     private Date issue;
     private String byWho;

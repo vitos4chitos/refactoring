@@ -6,9 +6,9 @@ import main.database.service.DocumentAgregatorService;
 import main.database.service.entity_service.*;
 import main.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.annotation.Documented;
 import java.util.List;
 
 @RestController
@@ -36,23 +36,23 @@ public class DocumentController {
 
 
     @GetMapping("{id}")
-    String getDocumentById(@PathVariable("id") Long id) {
-        return documentService.getDocumentById(id).toString();
+    ResponseEntity<Document> getDocumentById(@PathVariable("id") Long id) {
+        return documentService.getDocument(id);
     }
 
     @GetMapping("status/{id}")
-    String getStatusById(@PathVariable("id") Long id) {
-        return statusService.getStatusById(id).toString();
+    ResponseEntity<Status> getStatusById(@PathVariable("id") Long id) {
+        return statusService.getStatus(id);
     }
 
     @GetMapping("/type/{id}")
-    String getTypeOfDocumentById(@PathVariable("id") Long id) {
-        return typeOfDocumentService.getById(id).toString();
+    ResponseEntity<TypeOfDocument> getTypeOfDocumentById(@PathVariable("id") Long id) {
+        return typeOfDocumentService.getTypeOfDocument(id);
     }
 
     @GetMapping("/signature/{id}")
-    String getSignaturesById(@PathVariable("id") Long id) {
-        return signaturesService.getSignatureById(id).toString();
+    ResponseEntity<Signature> getSignaturesById(@PathVariable("id") Long id) {
+        return signaturesService.getSignature(id);
     }
 
 
@@ -62,47 +62,48 @@ public class DocumentController {
     }
 
     @GetMapping("/privileges/{id}")
-    String getPrivilegesByDocumentId(@PathVariable("id")  Long id) {
-        return privilegesService.getPrivilegesById(id).toString();
+    ResponseEntity<Privileges> getPrivilegesByDocumentId(@PathVariable("id") Long id) {
+        return privilegesService.getPrivilege(id);
     }
 
     @GetMapping("/parameter/{id}")
-    String getParameterByDocumentId(@PathVariable("id") Long id) {
-        return parameterService.getByParameterId(id).toString();
+    ResponseEntity<Parameter> getParameterByDocumentId(@PathVariable("id") Long id) {
+        return parameterService.getParameter(id);
     }
 
     @GetMapping()
-    List<BackVals> getUsersDocuments(@RequestParam("login") String login) {
-       return documentAgregatorService.getUsersDocuments(login);
+    ResponseEntity<BaseAnswer> getUsersDocuments(@RequestParam("login") String login) {
+        return documentAgregatorService.getUsersDocuments(login);
     }
 
     @GetMapping("/{id}/info")
-    DockInfo getDockInfoByDocumentId(@RequestParam("id") Long id){
+    ResponseEntity<BaseAnswer> getDockInfoByDocumentId(@RequestParam("id") Long id) {
         return documentAgregatorService.getDockInfoByDocumentId(id);
     }
 
     @GetMapping("/{id}/TypeOfDocumentWhichNotExist")
-    List<TypeOfDocument> getTypeOfDocumentByUserIdWhichNotExist(@PathVariable("id") Long id) {
+    ResponseEntity<List<TypeOfDocument>> getTypeOfDocumentByUserIdWhichNotExist(@PathVariable("id") Long id) {
         return documentAgregatorService.getNameTypeOfDocumentsWhichNotExistInDocuments(id);
     }
 
-    @PostMapping ()
-    String addDocument(@RequestBody DockumentToAdd document){
+    @PostMapping()
+    ResponseEntity<BaseAnswer> addDocument(@RequestBody DockumentToAdd document) {
         return documentAgregatorService.addDocument(document);
     }
 
-    @GetMapping("{login}/reference}")
-    List<Reference> getAllReference(@PathVariable("login") String login){
+    @GetMapping("{login}/reference")
+    ResponseEntity<BaseAnswer> getAllReference(@PathVariable("login") String login) {
         return documentAgregatorService.getAllReference(login);
     }
-    @PostMapping ("/document-priority")
-    String addDocumentPrior(@RequestBody DocumentToAddPrior document){
+
+    @PostMapping("/document-priority")
+    ResponseEntity<BaseAnswer> addDocumentPrior(@RequestBody DocumentToAddPrior document) {
         return documentAgregatorService.addDocumentPrior(document);
     }
 
 
     @PostMapping("{id}/review")
-    public String addForReview(@PathVariable("id") Long parameterId) {
+    ResponseEntity<BaseAnswer> addForReview(@PathVariable("id") Long parameterId) {
         return documentService.addForReview(parameterId);
     }
 

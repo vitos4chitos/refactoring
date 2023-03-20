@@ -6,6 +6,8 @@ import main.database.service.QueueAgregatorService;
 import main.database.service.entity_service.QueueService;
 import main.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,27 +23,28 @@ public class QueueController {
     QueueAgregatorService queueAgregatorService;
 
     @GetMapping("{id}")
-    String getQueue(@PathVariable("id") Long id) {
-        return queueService.getQueueById(id).toString();
+    ResponseEntity<Queue> getQueue(@PathVariable("id") Long id) {
+        return queueService.getQueue(id);
     }
 
     @GetMapping("/user/{id}")
-    List<Queue> getUsersQueues(@PathVariable("id") Long id) {
+    ResponseEntity<List<Queue>> getUsersQueues(@PathVariable("id") Long id) {
         return queueService.getAllQueueByUserId(id);
     }
 
     @GetMapping("/official/{login}")
-    public List<BackQueue> getOfficialQueue(@PathVariable("login") String login) {
+    ResponseEntity<BaseAnswer> getOfficialQueue(@PathVariable("login") String login) {
         return queueAgregatorService.getOfficialQueue(login);
     }
 
     @GetMapping("/official/{login}/first-user")
-    public FirstUser getFirstUserFromOfficialQueue(@PathVariable("login") String login) {
+    ResponseEntity<BaseAnswer> getFirstUserFromOfficialQueue(@PathVariable("login") String login) {
         return queueAgregatorService.getFirstUserFromOfficialQueue(login);
     }
 
-    @GetMapping("/official/{login}/advance")
-    public Boolean getAdvanceQueue(@PathVariable("login") Long officialId) {
-        return queueService.advanceQueue(officialId);
+    @PutMapping("/official/{login}/advance")
+    ResponseEntity<BaseAnswer> getAdvanceQueue(@PathVariable("login") Long officialId) {
+        queueService.advanceQueue(officialId);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

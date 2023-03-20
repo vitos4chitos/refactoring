@@ -1,57 +1,35 @@
 package main.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
-public class BackVals {
-    public String getName() {
-        return name;
+@AllArgsConstructor
+@Getter
+@Setter
+@Builder
+public class BackVals extends BaseAnswer{
+    private List<Vals> valsList;
+
+    public void addVal(Vals val){
+        valsList.add(val);
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    public static class Vals{
+        private String bywhom;
+        private long id;
+        private Date validity;
+        private String name;
+        private Date issue;
     }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public Date getValidity() {
-        return validity;
-    }
-
-    public void setValidity(Date validity) {
-        this.validity = validity;
-    }
-
-    public Date getIssue() {
-        return issue;
-    }
-
-    public void setIssue(Date issue) {
-        this.issue = issue;
-    }
-
-    private String name;
-
-    public String getBywhom() {
-        return bywhom;
-    }
-
-    public void setBywhom(String bywhom) {
-        this.bywhom = bywhom;
-    }
-
-    private String bywhom;
-    private long id;
-    private Date validity;
-    private Date issue;
 }

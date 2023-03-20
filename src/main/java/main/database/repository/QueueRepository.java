@@ -7,10 +7,13 @@ import org.springframework.data.repository.query.Param;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 public interface QueueRepository extends JpaRepository<Queue, Long> {
-    Queue getQueueById(Long id);
+    Optional<Queue> getQueueById(Long id);
+
     List<Queue> getQueuesByUserId(Long userId);
+
     List<Queue> getQueueByOfficialId(Long officialId);
 
     @Transactional

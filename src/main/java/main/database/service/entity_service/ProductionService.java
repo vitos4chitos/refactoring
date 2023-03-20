@@ -11,7 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductionService {
 
-    private ProductionRepository productionRepository;
+    private final ProductionRepository productionRepository;
 
     public List<Production> getProductionByType(Long id) {
 
@@ -23,7 +23,7 @@ public class ProductionService {
 
     }
 
-    public void save(Production production){
+    public void save(Production production) {
         productionRepository.save(production);
     }
 

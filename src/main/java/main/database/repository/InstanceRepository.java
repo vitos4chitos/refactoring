@@ -6,10 +6,11 @@ import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
 import javax.transaction.Transactional;
+import java.util.Optional;
 
 public interface InstanceRepository extends JpaRepository<Instance, Long> {
 
-    Instance getInstanceById(Long id);
+    Optional<Instance> getInstanceById(Long id);
 
     @Transactional
     @Procedure(procedureName = "transfer_to_the_next_level")

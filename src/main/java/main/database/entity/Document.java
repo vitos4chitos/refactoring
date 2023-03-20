@@ -12,6 +12,8 @@ import java.util.Objects;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Document {
 
     @Id
@@ -35,7 +37,7 @@ public class Document {
     private String issuedByWhom;
 
     @Column(name = "parameters_id")
-    private Long parameters_id;
+    private Long parametersId;
 
     @Override
     public boolean equals(Object o) {

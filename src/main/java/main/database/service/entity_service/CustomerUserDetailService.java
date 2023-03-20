@@ -1,12 +1,17 @@
 package main.database.service.entity_service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import main.database.entity.Official;
 import main.database.entity.User;
 import main.database.repository.OfficialRepository;
 import main.database.repository.UserRepository;
 import main.entity.AuthUser;
+import main.entity.BaseAnswer;
+import main.entity.ErrorAnswer;
 import main.entity.RegUserForm;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -26,6 +31,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -35,84 +41,92 @@ public class CustomerUserDetailService implements UserDetailsService {
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
 
         Optional<User> userOptional = userRepository.getUserByLogin(login);
-        if(!userOptional.isPresent()) {
+        if (!userOptional.isPresent()) {
             throw new UsernameNotFoundException("User not found");
         }
         User user = userOptional.get();
-        System.out.println(user.toString());
+        System.out.println(user);
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("USER"));
 
         return new org.springframework.security.core.userdetails.User(user.getLogin(), user.getPassword(), authorities);
     }
 
-    public Official loadUserByUsernameO(String login) throws UsernameNotFoundException {
+    private Official loadUserOffByUsername(String login) throws UsernameNotFoundException {
 
-        Official officialOptional = officialRepository.getOfficialByLogin(login);
-        if(officialOptional == null) {
+        Optional<Official> officialOptional = officialRepository.getOfficialByLogin(login);
+        if (!officialOptional.isPresent()) {
             throw new UsernameNotFoundException("Official not found");
         }
-        return officialOptional;
+        return officialOptional.get();
     }
 
-    public String addUser(User user) {
+    public Boolean addUser(User user) {
         try {
             user.setRole("USER");
             userRepository.save(user);
-            return "{\"token\": \"true\"}";
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            return "{\"token\": \"err\"}";
+            log.error(e.toString());
+            return false;
         }
     }
 
-    public String auth(AuthUser user){
-        System.out.println("****");
-        System.out.println(user.getLogin());
+    public ResponseEntity<BaseAnswer> auth(AuthUser user) {
+        log.info("Постпуил запрос на авторизацию: {}", user);
         UserDetails securityUser = loadUserByUsername(user.getLogin());
         if (securityUser != null) {
-            System.out.println(securityUser.getPassword());
+            log.info(securityUser.getPassword());
             if (securityUser.getPassword().equals(user.getPassword())) {
-                System.out.println("User exist");
-                return "{\"token\": \"true\"}";
+                log.info("Пользовательские данные верны");
+                return new ResponseEntity<>(HttpStatus.OK);
             }
-            return "{\"token\": \"bad\"}";
+            log.error("Пользовательские данные не верны");
+            return new ResponseEntity<>(ErrorAnswer.builder()
+                    .message("incorrect login or password")
+                    .build(), HttpStatus.FORBIDDEN);
         } else {
-            System.out.println("User doesn't exist");
-            System.out.println("POST request ... ");
-            return "{\"token\": \"bad\"}";
+            log.error("Пользователя не существует");
+            return new ResponseEntity<>(ErrorAnswer.builder()
+                    .message("UserNotFound")
+                    .build(), HttpStatus.UNPROCESSABLE_ENTITY);
         }
     }
 
-    public String singUp(RegUserForm user) throws ParseException {
-        System.out.println("sdsdsd");
-        User us = new User();
-        us.setInstance_id((long) 1);
-        us.setActive(user.isActive());
-        us.setLogin(user.getUsername());
-        us.setMoney(user.getMoney());
-        us.setName(user.getName());
-        String hashPassword = new BCryptPasswordEncoder(12).encode(user.getPassword());
-        us.setPassword(hashPassword);
-        us.setRole(user.getRole());
-        us.setSurname(user.getSurname());
+    public ResponseEntity<BaseAnswer> singUp(RegUserForm user) throws ParseException {
+        log.info("Поступил запрос на регистрацию пользователя {}", user);
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date date = dateFormat.parse(user.getDate().toString());
         long time = date.getTime();
-        us.setTime_result(new Timestamp(time));
-        System.out.println(us.toString());
-        return addUser(us);
+        User us = User.builder()
+                .instanceId(1L)
+                .active(user.isActive())
+                .login(user.getUsername())
+                .money(user.getMoney())
+                .name(user.getName())
+                .role(user.getRole())
+                .password(user.getPassword())
+                .surname(user.getSurname())
+                .time_result(new Timestamp(time))
+                .build();
+        if(addUser(us)){
+            log.info("Успешная регистрация {}", user);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+        log.error("Пользователь {} не смог зарегистрироваться", user);
+        return new ResponseEntity<>(ErrorAnswer.builder()
+                .message("Bad Request").build(),
+                HttpStatus.BAD_REQUEST);
     }
 
-    public String authOfficial(AuthUser user){
-            System.out.println("****");
-            System.out.println(user.getLogin());
-            Official official = loadUserByUsernameO(user.getLogin());
-            System.out.println(official.getName() + " " + official.getSurname());
-            System.out.println(official.getPassword());
-            if (official.getPassword().equals(user.getPassword())) {
-                System.out.println("User exist");
-                return "{\"token\": \"true\"}";
-            }
-            return "{\"token\": \"bad\"}";
+    public ResponseEntity<BaseAnswer> authOfficial(AuthUser user) {
+        log.info("Постпуил запрос на авторизацию оф.лица: {}", user);
+        Official official = loadUserOffByUsername(user.getLogin());
+        if (official.getPassword().equals(user.getPassword())) {
+            log.info("Пользовательские данные верны");
+            return new ResponseEntity<>(HttpStatus.OK);
         }
+        return new ResponseEntity<>(ErrorAnswer.builder()
+                .message("incorrect login or password")
+                .build(), HttpStatus.FORBIDDEN);
+    }
 }

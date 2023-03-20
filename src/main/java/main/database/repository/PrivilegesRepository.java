@@ -8,5 +8,6 @@ import java.util.List;
 public interface PrivilegesRepository extends JpaRepository<Privileges, Long> {
 
     Privileges getPrivilegesById(Long id);
+
     List<Privileges> getPrivilegesBySale(int sale);
 }

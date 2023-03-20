@@ -2,8 +2,10 @@ package main.controller;
 
 import main.database.service.SignatureAgregatorService;
 import main.database.service.entity_service.SignaturesService;
+import main.entity.BaseAnswer;
 import main.entity.Sign;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,7 +19,7 @@ public class SignaturesController {
     SignatureAgregatorService signaturesService;
 
     @PostMapping()
-    Boolean makeSign(@RequestBody Sign sign) {
+    ResponseEntity<BaseAnswer> makeSign(@RequestBody Sign sign) {
         return signaturesService.makeSign(sign);
     }
 }

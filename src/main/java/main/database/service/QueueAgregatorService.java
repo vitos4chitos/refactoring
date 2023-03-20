@@ -1,17 +1,24 @@
 package main.database.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.service.entity_service.*;
 import main.entity.BackQueue;
+import main.entity.BaseAnswer;
+import main.entity.ErrorAnswer;
 import main.entity.FirstUser;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class QueueAgregatorService {
 
     private final UserService userService;
@@ -22,59 +29,72 @@ public class QueueAgregatorService {
     private final QueueService queueService;
     private final SignaturesService signaturesService;
 
-    public List<BackQueue> getOfficialQueue(String login){
-        System.out.println(login);
-        List<Queue> queues = queueService.getQueueByOfficialUsername(login);
-        List<BackQueue> qu = new ArrayList<>();
-        BackQueue bq;
-        for (Queue queue : queues) {
-            bq = new BackQueue();
-            User user = userService.getUserById(queue.getUserId());
-            bq.setName(user.getName() + " " + user.getSurname());
-            bq.setId(user.getId());
-            bq.setPlace(queue.getPlace());
-            bq.setPrior(queue.getPriority());
-            qu.add(bq);
-            System.out.println(user.getName());
+    public ResponseEntity<BaseAnswer> getOfficialQueue(String login) {
+        log.info("Поступил запрос на получение очереди у оф.лица login = {}", login);
+        Official official = officialService.getOfficialByLogin(login);
+        if(official == null){
+            return new ResponseEntity<>(new ErrorAnswer("OfficialNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        return qu;
+        List<Queue> queues = queueService.getQueueByOfficialUsername(official);
+        BackQueue bq = BackQueue.builder().queue(new ArrayList<>()).build();
+        queues.forEach(q -> {
+            User user = userService.getUserById(q.getUserId());
+            bq.addUser(BackQueue.User.builder()
+                    .name(user.getName() + " " + user.getSurname())
+                    .id(user.getId())
+                    .place(q.getPlace())
+                    .prior(q.getPriority())
+                    .build());
+        });
+        log.info("Сформирована очередь", bq);
+        return new ResponseEntity<>(bq, HttpStatus.OK);
     }
 
-    public FirstUser getFirstUserFromOfficialQueue(String login){
-        System.out.println(login);
-        User user = queueService.getFirstUserFromQueueByOfficialUsername(login);
-        FirstUser firstUser = new FirstUser();
-        firstUser.setId(user.getId());
-        firstUser.setName(user.getName());
-        firstUser.setSurname(user.getSurname());
-        Long idSign;
+    public ResponseEntity<BaseAnswer> getFirstUserFromOfficialQueue(String login) {
+        log.info("Поступил запрос на получение первого полльзователя в очереди у оф.лица login = {}", login);
         Official official = officialService.getOfficialByLogin(login);
+        if(official == null){
+            return new ResponseEntity<>(new ErrorAnswer("OfficialNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        Long userId = queueService.getFirstUserIdFromQueueByOfficialUsername(official);
+        if(userId.equals(-1L)){
+            log.info("Очередь пустая");
+            return new ResponseEntity<>(FirstUser.builder().build(), HttpStatus.OK);
+        }
+        User user = userService.getUserById(userId);
+        FirstUser firstUser = FirstUser
+                .builder()
+                .id(user.getId())
+                .name(user.getName())
+                .surname(user.getSurname())
+                .build();
         List<Document> documentList = documentService.getAllDocumentsByUserId(user.getId());
         List<Parameter> parameters = new ArrayList<>();
-        Parameter parameter;
-        for (Document document : documentList) {
-            if (document.getParameters_id() != null) {
-                parameter = parameterService.getByParameterId(document.getParameters_id());
-                parameters.add(parameter);
-            }
-        }
+        log.info("Формирование параметров");
+        documentList.stream()
+                .filter(d -> d.getParametersId() != null)
+                .forEach(d -> parameters.add(parameterService.getByParameterId(d.getParametersId())));
         List<Signature> signatures;
+        log.info("Формирование подписей");
         Signature sign = new Signature();
         for (Parameter value : parameters) {
             signatures = signaturesService.getSignsById(value.getId());
-            for (Signature signature : signatures) {
-                if (signature.getOfficialId().equals(official.getId()) && !signature.getIsSubscribed()) {
-                    sign = signature;
-                    break;
-                }
+            Optional<Signature> signature = signatures.stream()
+                    .filter(s -> s.getOfficialId().equals(official.getId()) && !s.getIsSubscribed())
+                    .findFirst();
+            if(signature.isPresent()){
+                sign = signature.get();
             }
         }
+        log.info("Формирование документа на подпись");
         for (Document document : documentList) {
-            if (document.getParameters_id() != null && document.getParameters_id().equals(sign.getParametersId())) {
+            if (document.getParametersId() != null && document.getParametersId().equals(sign.getParametersId())) {
                 firstUser.setDockname(typeOfDocumentService.getById(document.getTypeOfDocumentId()).getName());
                 break;
             }
         }
-        return firstUser;
+        log.info("Формирование ответа");
+
+        return new ResponseEntity<>(firstUser, HttpStatus.OK);
     }
 }
