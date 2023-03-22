@@ -42,12 +42,6 @@ public class Production {
     @Column(name = "time")
     private Duration time;
 
-
-    // TODO: 15.03.2022 fix return null time interval 
-    public Duration getTime() {
-        return time;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

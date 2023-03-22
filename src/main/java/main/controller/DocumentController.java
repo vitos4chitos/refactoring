@@ -4,7 +4,9 @@ package main.controller;
 import main.database.entity.*;
 import main.database.service.DocumentAgregatorService;
 import main.database.service.entity_service.*;
-import main.entity.*;
+import main.entity.request.DocumentToAdd;
+import main.entity.request.PreferentialDocument;
+import main.entity.responce.BaseAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -55,12 +57,6 @@ public class DocumentController {
         return signaturesService.getSignature(id);
     }
 
-
-    @GetMapping("/producation/{id}")
-    String getProductionByDocumentId(@PathVariable("id") Long id) {
-        return productionService.getProductionById(id).toString();
-    }
-
     @GetMapping("/privileges/{id}")
     ResponseEntity<Privileges> getPrivilegesByDocumentId(@PathVariable("id") Long id) {
         return privilegesService.getPrivilege(id);
@@ -77,7 +73,7 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}/info")
-    ResponseEntity<BaseAnswer> getDockInfoByDocumentId(@RequestParam("id") Long id) {
+    ResponseEntity<BaseAnswer> getDockInfoByDocumentId(@PathVariable("id") Long id) {
         return documentAgregatorService.getDockInfoByDocumentId(id);
     }
 
@@ -87,7 +83,7 @@ public class DocumentController {
     }
 
     @PostMapping()
-    ResponseEntity<BaseAnswer> addDocument(@RequestBody DockumentToAdd document) {
+    ResponseEntity<BaseAnswer> addDocument(@RequestBody DocumentToAdd document) {
         return documentAgregatorService.addDocument(document);
     }
 
@@ -97,13 +93,13 @@ public class DocumentController {
     }
 
     @PostMapping("/document-priority")
-    ResponseEntity<BaseAnswer> addDocumentPrior(@RequestBody DocumentToAddPrior document) {
+    ResponseEntity<BaseAnswer> addDocumentPrior(@RequestBody PreferentialDocument document) {
         return documentAgregatorService.addDocumentPrior(document);
     }
 
 
     @PostMapping("{id}/review")
-    ResponseEntity<BaseAnswer> addForReview(@PathVariable("id") Long parameterId) {
+    ResponseEntity<BaseAnswer> addForReviewByParameterId(@PathVariable("id") Long parameterId) {
         return documentService.addForReview(parameterId);
     }
 

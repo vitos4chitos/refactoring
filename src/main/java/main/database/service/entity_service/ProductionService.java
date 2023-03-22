@@ -26,8 +26,4 @@ public class ProductionService {
     public void save(Production production) {
         productionRepository.save(production);
     }
-
-    public Production getProductionById(Long id) {
-        return productionRepository.getProductionById(id);
-    }
 }

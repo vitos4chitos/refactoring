@@ -11,6 +11,8 @@ import java.util.Objects;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Privileges {
     @Id
     @Column(name = "privileges_id")

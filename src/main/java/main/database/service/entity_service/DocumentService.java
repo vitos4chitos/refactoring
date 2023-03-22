@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.repository.*;
-import main.entity.*;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.ErrorAnswer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,8 +45,10 @@ public class DocumentService {
     }
 
     public Boolean addDocument(Document document) {
+        log.info("Поступил запрос на добавление документа {}", document);
         try {
             documentRepository.save(document);
+            log.info("Документ был успешно добавлен");
             return true;
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -59,10 +61,11 @@ public class DocumentService {
         if(isExistById(parameterId)) {
             try {
                 documentRepository.addForReview(parameterId);
+                log.info("Отправлено на проверку");
                 return new ResponseEntity<>(HttpStatus.OK);
             } catch (Exception e) {
                 log.error(e.getMessage());
-                return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+                return new ResponseEntity<>(new ErrorAnswer("There are no necessary documents or there are no signatures"), HttpStatus.UNPROCESSABLE_ENTITY);
             }
         }
         return new ResponseEntity<>(new ErrorAnswer("ParameterNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);

@@ -11,4 +11,6 @@ public interface TypeOfDocumentRepository extends JpaRepository<TypeOfDocument, 
     TypeOfDocument getTypeOfDocumentByName(String name);
 
     List<TypeOfDocument> getTypeOfDocumentsByInstanceId(Long instanceId);
+
+    boolean existsByName(String name);
 }

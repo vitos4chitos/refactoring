@@ -6,19 +6,17 @@ import main.database.entity.Official;
 import main.database.entity.User;
 import main.database.repository.OfficialRepository;
 import main.database.repository.UserRepository;
-import main.entity.AuthUser;
-import main.entity.BaseAnswer;
-import main.entity.ErrorAnswer;
-import main.entity.RegUserForm;
+import main.entity.request.AuthUser;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.ErrorAnswer;
+import main.entity.request.RegUserForm;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -99,11 +97,10 @@ public class CustomerUserDetailService implements UserDetailsService {
         long time = date.getTime();
         User us = User.builder()
                 .instanceId(1L)
-                .active(user.isActive())
+                .active(true)
                 .login(user.getUsername())
                 .money(user.getMoney())
                 .name(user.getName())
-                .role(user.getRole())
                 .password(user.getPassword())
                 .surname(user.getSurname())
                 .time_result(new Timestamp(time))
@@ -113,8 +110,9 @@ public class CustomerUserDetailService implements UserDetailsService {
             return new ResponseEntity<>(HttpStatus.OK);
         }
         log.error("Пользователь {} не смог зарегистрироваться", user);
-        return new ResponseEntity<>(ErrorAnswer.builder()
-                .message("Bad Request").build(),
+        return new ResponseEntity<>(
+                ErrorAnswer.builder()
+                    .message("Bad Request").build(),
                 HttpStatus.BAD_REQUEST);
     }
 
@@ -125,8 +123,10 @@ public class CustomerUserDetailService implements UserDetailsService {
             log.info("Пользовательские данные верны");
             return new ResponseEntity<>(HttpStatus.OK);
         }
-        return new ResponseEntity<>(ErrorAnswer.builder()
-                .message("incorrect login or password")
-                .build(), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(
+                ErrorAnswer.builder()
+                .message("Incorrect login or password")
+                .build(),
+                HttpStatus.FORBIDDEN);
     }
 }

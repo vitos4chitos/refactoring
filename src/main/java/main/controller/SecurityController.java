@@ -1,7 +1,9 @@
 package main.controller;
 
-import main.entity.*;
 import main.database.service.entity_service.CustomerUserDetailService;
+import main.entity.request.AuthUser;
+import main.entity.request.RegUserForm;
+import main.entity.responce.BaseAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -4,7 +4,7 @@ package main.controller;
 import main.database.entity.*;
 import main.database.service.QueueAgregatorService;
 import main.database.service.entity_service.QueueService;
-import main.entity.*;
+import main.entity.responce.BaseAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

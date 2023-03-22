@@ -11,6 +11,8 @@ import java.util.Objects;
 @ToString
 @RequiredArgsConstructor
 @Entity(name = "types")
+@Builder
+@AllArgsConstructor
 public class TypeOfDocument {
     @Id
     @Column(name = "type_of_document_id")

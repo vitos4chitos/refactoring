@@ -2,11 +2,8 @@ package main.database.service.entity_service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import main.controller.SecurityController;
 import main.database.entity.User;
 import main.database.repository.UserRepository;
-import main.entity.AuthUser;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

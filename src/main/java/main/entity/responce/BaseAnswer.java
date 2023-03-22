@@ -1,15 +1,14 @@
-package main.entity;
+package main.entity.responce;
 
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.stereotype.Service;
 
 @Data
 @NoArgsConstructor
 @Getter
 @Setter
-public class Sign {
-    Long userId;
-    String loginOff;
+public class BaseAnswer {
 }

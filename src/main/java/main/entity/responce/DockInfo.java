@@ -1,4 +1,4 @@
-package main.entity;
+package main.entity.responce;
 
 import lombok.*;
 import main.database.entity.Signature;
@@ -13,18 +13,18 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
-public class DockInfo extends BaseAnswer{
-    private Long id;
+public class DockInfo extends BaseAnswer {
+    private Long documentId;
     private String name;
-    private String lgot;
-    private Date validity;
+    private String lgots;
+    private Date validityDate;
 
     private List<Signature> signatures;
 
     private Status status;
 
-    private Date issue;
-    private String byWho;
+    private Date issueDate;
+    private String isuedBy;
 
 
 

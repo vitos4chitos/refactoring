@@ -6,6 +6,7 @@ import main.database.entity.Official;
 import main.database.entity.Prosecutor;
 import main.database.service.entity_service.InstanceService;
 import main.database.service.entity_service.OfficialService;
+import main.entity.responce.BaseAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,8 +41,8 @@ public class InstanceController {
         return instanceService.getChecker(id);
     }
 
-    @PostMapping("{user-login}/nextLevel")
-    String transferToTheNextLevel(@PathVariable("login") String login) {
+    @PostMapping("{login}/nextLevel")
+    ResponseEntity<BaseAnswer> transferToTheNextLevel(@PathVariable("login") String login) {
         return instanceService.transferToTheNextLevel(login);
     }
 }

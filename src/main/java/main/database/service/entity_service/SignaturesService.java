@@ -4,12 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.repository.SignatureRepository;
-import main.entity.Sign;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,12 +31,9 @@ public class SignaturesService {
         signaturesRepository.verificationOfSignatures(signature.getParametersId());
     }
 
-    public void save(Signature signature) {
-        signaturesRepository.save(signature);
-    }
-
-    public List<Signature> getSignsByOffId(Long id) {
-        return signaturesRepository.getSignatureByOfficialId(id);
+    public void save(List<Signature> list){
+        log.info("Сохраняю данные о подписях");
+        signaturesRepository.saveAll(list);
     }
 
     private Signature getSignatureById(Long id) {

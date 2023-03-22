@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.repository.*;
-import main.entity.BaseAnswer;
-import main.entity.ErrorAnswer;
-import main.entity.UserInfo;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.ErrorAnswer;
+import main.entity.responce.UserInfo;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -73,7 +73,7 @@ public class InstanceService {
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    public ResponseEntity<BaseAnswer> transferToTheNextLevelCheck(String login) {
+    private ResponseEntity<BaseAnswer> transferToTheNextLevelCheck(String login) {
         log.info("Поступил запрос на перевод пользователя на следующую инстанцию login = {}",
                 login);
         Optional<User> user = userService.getUserByLogin(login);
@@ -92,25 +92,27 @@ public class InstanceService {
     }
 
     public ResponseEntity<BaseAnswer> getInstance(String login) {
+        log.info("Поступил запрос на получение информации о деньгах и инстанции пользователя login =  {}", login);
         Long user = userService.getUserId(login);
         if (user == -1) {
+            log.error("Пользователь не найден");
             return new ResponseEntity<>(ErrorAnswer.builder()
                     .message("UserNotFound")
                     .build(),
                     HttpStatus.BAD_REQUEST);
         } else {
             User myUser = userService.getUserById(user);
-            log.info(myUser.toString());
-            UserInfo userInfo = UserInfo.builder()
-                    .id(myUser.getId())
-                    .money(myUser.getMoney())
-                    .build();
-            log.info("Формируем ответ {}", userInfo);
-            return new ResponseEntity<>(userInfo, HttpStatus.OK);
+            log.info("Удалось найти пользователя");
+            return new ResponseEntity<>(
+                    UserInfo.builder()
+                        .instanceId(myUser.getInstanceId())
+                        .userMoney(myUser.getMoney())
+                        .build(),
+                    HttpStatus.OK);
         }
     }
 
-    ResponseEntity<BaseAnswer> transferToTheNextLevel(String login) {
+    public ResponseEntity<BaseAnswer> transferToTheNextLevel(String login) {
         return transferToTheNextLevelCheck(login);
     }
 

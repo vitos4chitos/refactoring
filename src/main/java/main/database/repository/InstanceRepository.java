@@ -14,5 +14,5 @@ public interface InstanceRepository extends JpaRepository<Instance, Long> {
 
     @Transactional
     @Procedure(procedureName = "transfer_to_the_next_level")
-    boolean transferToTheNextLevel(@Param("user_id") Long userId);
+    boolean transferToTheNextLevel(Long userId);
 }

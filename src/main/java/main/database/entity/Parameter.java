@@ -11,6 +11,8 @@ import java.util.Objects;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Parameter {
     @Id
     @Column(name = "parameters_id")

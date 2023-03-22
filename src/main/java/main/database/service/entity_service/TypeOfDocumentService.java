@@ -58,4 +58,8 @@ public class TypeOfDocumentService {
         return new ArrayList<>();
     }
 
+    public boolean isPresentByName(String name){
+        return typeOfDocumentRepository.existsByName(name);
+    }
+
 }

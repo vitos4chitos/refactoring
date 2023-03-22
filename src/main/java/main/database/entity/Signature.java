@@ -11,6 +11,8 @@ import java.util.Objects;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Signature {
     @Id
     @Column(name = "signature_id")

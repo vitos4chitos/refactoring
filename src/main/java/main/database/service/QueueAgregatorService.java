@@ -4,10 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.service.entity_service.*;
-import main.entity.BackQueue;
-import main.entity.BaseAnswer;
-import main.entity.ErrorAnswer;
-import main.entity.FirstUser;
+import main.entity.responce.queue.BackQueue;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.ErrorAnswer;
+import main.entity.responce.FirstUser;
+import main.entity.responce.queue.UserInQueue;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -35,18 +36,19 @@ public class QueueAgregatorService {
         if(official == null){
             return new ResponseEntity<>(new ErrorAnswer("OfficialNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        log.info("Формирую очердь");
         List<Queue> queues = queueService.getQueueByOfficialUsername(official);
         BackQueue bq = BackQueue.builder().queue(new ArrayList<>()).build();
         queues.forEach(q -> {
             User user = userService.getUserById(q.getUserId());
-            bq.addUser(BackQueue.User.builder()
+            bq.addUser(UserInQueue.builder()
                     .name(user.getName() + " " + user.getSurname())
                     .id(user.getId())
                     .place(q.getPlace())
                     .prior(q.getPriority())
                     .build());
         });
-        log.info("Сформирована очередь", bq);
+        log.info("Сформирована очередь {}", bq);
         return new ResponseEntity<>(bq, HttpStatus.OK);
     }
 
@@ -59,7 +61,7 @@ public class QueueAgregatorService {
         Long userId = queueService.getFirstUserIdFromQueueByOfficialUsername(official);
         if(userId.equals(-1L)){
             log.info("Очередь пустая");
-            return new ResponseEntity<>(FirstUser.builder().build(), HttpStatus.OK);
+            return new ResponseEntity<>(new BaseAnswer(), HttpStatus.OK);
         }
         User user = userService.getUserById(userId);
         FirstUser firstUser = FirstUser

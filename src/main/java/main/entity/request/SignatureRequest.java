@@ -1,4 +1,4 @@
-package main.entity;
+package main.entity.request;
 
 import lombok.Data;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class AuthUser {
-    String login;
-    String password;
+public class SignatureRequest {
+    Long userId;
+    String officialLogin;
 }

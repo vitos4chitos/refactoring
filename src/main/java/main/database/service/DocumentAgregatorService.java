@@ -1,20 +1,27 @@
 package main.database.service;
 
-import com.fasterxml.jackson.databind.ser.Serializers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.service.entity_service.*;
-import main.entity.*;
+import main.entity.request.DocumentToAdd;
+import main.entity.request.PreferentialDocument;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.DockInfo;
+import main.entity.responce.ErrorAnswer;
+import main.entity.responce.back_documents.BackDocument;
+import main.entity.responce.back_documents.BackDocuments;
+import main.entity.responce.reference.Reference;
+import main.entity.responce.reference.References;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,68 +44,65 @@ public class DocumentAgregatorService {
 
     public ResponseEntity<BaseAnswer> buyDocument(String login, Long bookkeepingId, String name) {
         log.info("Поступил запрос на покупку документа");
-        BigDecimal userMoney, productionCost;
-        if (userService.getUserByLogin(login).isPresent()) {
-            User user = userService.getUserByLogin(login).get();
-            userMoney = user.getMoney();
+        Optional<User> optionalUser = userService.getUserByLogin(login);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            BigDecimal productionCost;
             TypeOfDocument typeOfDocument = typeOfDocumentService.getByName(name);
             Production production = productionService.getProductionByBookkeepingIdAndAndTypeOfDocumentId(bookkeepingId, typeOfDocument.getId());
-            log.info("До" + production.getCost());
-            log.info("Скидка" + documentService.calculateSale(user.getId()));
-            productionCost = BigDecimal.valueOf(production.getCost().doubleValue() * ((100 - documentService.calculateSale(user.getId())) / 100.0));
-            log.info("После" + productionCost);
-            if (userMoney.subtract(productionCost).doubleValue() >= 0) {
-                Signature signatureOne = new Signature();
-                Signature signatureTwo = new Signature();
-                Signature signatureThree = new Signature();
-                Parameter parameterOne = new Parameter();
-                parameterOne.setStatus(false);
-
-                user.setMoney(userMoney.subtract(productionCost));
-                userService.save(user);
-
-                parameterService.save(parameterOne);
-
-
+            log.info("Цена до " + production.getCost());
+            Long sale = documentService.calculateSale(user.getId());
+            if(sale != null) {
+                log.info("Скидка = " + sale);
+                productionCost = BigDecimal.valueOf(production.getCost().doubleValue() * ((100 - sale) / 100.0));
+                log.info("Цена послe " + productionCost);
+            }
+            else
+                productionCost = BigDecimal.valueOf(production.getCost().doubleValue() * 100);
+            if (user.getMoney().subtract(productionCost).doubleValue() >= 0) {
+                Parameter parameterOne = Parameter.builder()
+                        .status(false)
+                        .build();
+                user.setMoney(user.getMoney().subtract(productionCost));
                 List<Official> officials = officialService.getOfficialByInstanceId(user.getInstanceId());
-                System.out.println(officials.size());
+                log.info("Все должностные лица на участке: {}", officials);
                 if (officials.size() >= 3) {
-                    signatureOne.setIsSubscribed(false);
-                    signatureOne.setOfficialId(officials.get(0).getId());
-                    signatureOne.setParametersId(parameterOne.getId());
-
-                    signatureTwo.setIsSubscribed(false);
-                    signatureTwo.setOfficialId(officials.get(1).getId());
-                    signatureTwo.setParametersId(parameterOne.getId());
-
-                    signatureThree.setIsSubscribed(false);
-                    signatureThree.setOfficialId(officials.get(2).getId());
-                    signatureThree.setParametersId(parameterOne.getId());
-
-                    signatureService.save(signatureOne);
-                    signatureService.save(signatureTwo);
-                    signatureService.save(signatureThree);
-
+                    signatureService.save(List.of(
+                            Signature.builder()
+                                .isSubscribed(false)
+                                .officialId(officials.get(0).getId())
+                                .parametersId(parameterOne.getId())
+                                .build(),
+                            Signature.builder()
+                                    .isSubscribed(false)
+                                    .officialId(officials.get(1).getId())
+                                    .parametersId(parameterOne.getId())
+                                    .build(),
+                            Signature.builder()
+                                    .isSubscribed(false)
+                                    .officialId(officials.get(2).getId())
+                                    .parametersId(parameterOne.getId())
+                                    .build()));
                     production.setQuantity(production.getQuantity() - 1);
-
                     productionService.save(production);
-
-                    Document document = new Document();
-                    document.setTypeOfDocumentId(typeOfDocument.getId());
-                    java.sql.Date date = new java.sql.Date(Calendar.getInstance().getTime().getTime());
-                    document.setDateOfIssue(date);
-                    document.setUserId(user.getId());
-                    document.setValidity(null);
-                    document.setIssuedByWhom("Замок");
-                    document.setParametersId(parameterOne.getId());
-                    documentService.save(document);
-
-                    queueService.putInQueue(user.getId(), officials.get(0).getId());
-                    queueService.putInQueue(user.getId(), officials.get(1).getId());
-                    queueService.putInQueue(user.getId(), officials.get(2).getId());
-
+                    documentService.save(
+                            Document.builder()
+                                    .typeOfDocumentId(typeOfDocument.getId())
+                                    .dateOfIssue(new java.sql.Date(Calendar.getInstance().getTime().getTime()))
+                                    .userId(user.getId())
+                                    .validity(null)
+                                    .issuedByWhom("Замок")
+                                    .parametersId(parameterOne.getId())
+                                    .build()
+                            );
+                    queueService.putInQueue(user, officials);
+                    userService.save(user);
+                    parameterService.save(parameterOne);
                     return new ResponseEntity<>(HttpStatus.OK);
                 }
+            }
+            else{
+                return new ResponseEntity<>(new ErrorAnswer("NotMuchOfficials"), HttpStatus.BAD_REQUEST);
             }
         }
         log.error("Пользователь не найден");
@@ -113,9 +117,13 @@ public class DocumentAgregatorService {
             return new ResponseEntity<>(new ErrorAnswer("UserNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
         List<Document> documents = documentService.getAllDocumentsByUserId(id);
-        long inst = userService.getUserById(id).getInstanceId();
-        List<TypeOfDocument> typeOfDocuments = typeOfDocumentService.getTypes(inst);
-        BackVals backVals = new BackVals();
+        if(documents.isEmpty()){
+            log.info("Документы у пользователя отсутсвуют");
+            return new ResponseEntity<>(new BackDocuments(), HttpStatus.OK);
+        }
+        User user = userService.getUserById(id);
+        List<TypeOfDocument> typeOfDocuments = typeOfDocumentService.getTypes(user.getInstanceId());
+        BackDocuments backVals = BackDocuments.builder().documentList(new ArrayList<>()).build();
         for (TypeOfDocument typeOfDocument : typeOfDocuments) {
             if (typeOfDocument.getPrivilegesId() == 1 && !typeOfDocument.getName().equals("Пасспорт") &&
                     !typeOfDocument.getName().equals("Свидетельство о рождении") &&
@@ -129,7 +137,7 @@ public class DocumentAgregatorService {
                     }
                 }
                 if (!flag) {
-                    BackVals.Vals bv = BackVals.Vals.builder().build();
+                    BackDocument bv = BackDocument.builder().build();
                     bv.setName(typeOfDocument.getName());
                     backVals.addVal(bv);
                 }
@@ -147,18 +155,19 @@ public class DocumentAgregatorService {
         }
         List<Document> documents = documentService.getAllDocumentsByUserId(userId);
         if (documents.isEmpty()){
-            return new ResponseEntity<>(new BackVals(), HttpStatus.OK);
+            log.info("Документы не найдены. Отсутсвуют у пользователя");
+            return new ResponseEntity<>(new BackDocuments(), HttpStatus.OK);
         }
-        BackVals backVals = BackVals.builder().valsList(new ArrayList<>()).build();
+        BackDocuments backVals = BackDocuments.builder().documentList(new ArrayList<>()).build();
         documents.forEach(d -> {
                 TypeOfDocument typeOfDocument = typeOfDocumentService.getById(d.getTypeOfDocumentId());
                 backVals.addVal(
-                        BackVals.Vals.builder()
-                                .id(d.getId())
-                                .validity(d.getValidity())
-                                .issue(d.getDateOfIssue())
+                        BackDocument.builder()
+                                .documentId(d.getId())
+                                .validityDate(d.getValidity())
+                                .issueDate(d.getDateOfIssue())
                                 .name(typeOfDocument.getName())
-                                .bywhom(d.getIssuedByWhom())
+                                .issuedBy(d.getIssuedByWhom())
                                 .build()
                 );
         });
@@ -178,12 +187,12 @@ public class DocumentAgregatorService {
         String lgot = "Скидка = " + privileges.getSale() + "\n" + "Приоритет = " + privileges.getPriority() + "\n";
         log.info("Формирую базовую информацию о документе");
         DockInfo dockInfo = DockInfo.builder()
-                .id(document.getId())
-                .byWho(document.getIssuedByWhom())
-                .issue(document.getDateOfIssue())
-                .validity(document.getValidity())
+                .documentId(document.getId())
+                .isuedBy(document.getIssuedByWhom())
+                .issueDate(document.getDateOfIssue())
+                .validityDate(document.getValidity())
                 .name(typeOfDocument.getName())
-                .lgot(lgot)
+                .lgots(lgot)
                 .build();
         log.info("Формирую подписи документа");
         if (document.getParametersId() == null) {
@@ -206,6 +215,7 @@ public class DocumentAgregatorService {
             log.error("Пользователь не найден");
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        log.info("Начинаю поиск недостающих документов");
         List<TypeOfDocument> typeOfDocuments = typeOfDocumentService
                 .getAllTypeOfDocumentByInstanceId(user.getInstanceId());
         List<TypeOfDocument> ans = new ArrayList<>();
@@ -221,9 +231,9 @@ public class DocumentAgregatorService {
                 .collect(Collectors.toList()), HttpStatus.OK);
     }
 
-    public ResponseEntity<BaseAnswer> addDocument(DockumentToAdd document) {
+    public ResponseEntity<BaseAnswer> addDocument(DocumentToAdd document) {
         log.info("Поступил запрос на сохранение документа {}", document);
-        long userId = userService.getUserId(document.getLogin());
+        long userId = userService.getUserId(document.getUserLogin());
         if(userId == -1){
             return new ResponseEntity<>(new ErrorAnswer("UserNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
@@ -233,12 +243,16 @@ public class DocumentAgregatorService {
             if (typeOfDocument.getName().equals(document.getName()))
                 typeId = typeOfDocument.getId();
         }
+        if(typeId == -1){
+            log.error("Тип документа не найден");
+            return new ResponseEntity<>(new ErrorAnswer("TypeOfDocumentNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
+        }
         Boolean status = documentService.addDocument(Document.builder()
-                        .dateOfIssue(document.getDate1())
-                        .issuedByWhom(document.getBywhom())
+                        .dateOfIssue(document.getIssueDate())
+                        .issuedByWhom(document.getIssuedBy())
                         .parametersId(null)
                         .userId(userId)
-                        .validity(document.getDate2())
+                        .validity(document.getValidityDate())
                         .typeOfDocumentId(typeId)
                         .build());
         if(status){
@@ -255,14 +269,20 @@ public class DocumentAgregatorService {
         if(userId == -1){
             return new ResponseEntity<>(new ErrorAnswer("UserNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        References references = new References();
+        References references = References.builder().references(new ArrayList<>()).build();
         List<Document> documents = documentService.getAllDocumentsByUserId(userId);
+        if(documents.isEmpty()){
+            log.info("Документы у пользователя отсутсвуют");
+            return new ResponseEntity<>(references, HttpStatus.OK);
+        }
+        log.info("Приступаю к наполнению ответа");
         documents.stream().filter(document -> document.getParametersId() != null).forEach(document -> {
             Parameter parameter = parameterService.getByParameterId(document.getParametersId());
             TypeOfDocument typeOfDocument = typeOfDocumentService.getById(document.getTypeOfDocumentId());
-            References.Reference reference = new References.Reference();
-            reference.setId(parameter.getId());
-            reference.setName(typeOfDocument.getName());
+            Reference reference = Reference.builder()
+                    .id(parameter.getId())
+                    .name(typeOfDocument.getName())
+                    .build();
             if (parameter.getStatus()) {
                 reference.setSign("Подписано");
                 Status status = statusService.getStatusByParamId(parameter.getId());
@@ -280,60 +300,53 @@ public class DocumentAgregatorService {
                 reference.setCheck("Не добавлено проверено");
             }
             references.addReference(reference);
-            System.out.println(reference.getName());
         });
         return new ResponseEntity<>(references, HttpStatus.OK);
     }
 
-    public ResponseEntity<BaseAnswer> addDocumentPrior(DocumentToAddPrior document) {
+    public ResponseEntity<BaseAnswer> addDocumentPrior(PreferentialDocument document) {
         log.info("Поступил запрос на добавление льготного документа {}", document);
-        long userId = userService.getUserId(document.getLogin());
+        long userId = userService.getUserId(document.getUserLogin());
         if(userId == -1){
             return new ResponseEntity<>(new ErrorAnswer("UserNotFound"), HttpStatus.UNPROCESSABLE_ENTITY);
         }
         log.info("Приступаю к заполнению полей");
-        Document documentToAdd = new Document();
-        TypeOfDocument typeOfDocument = new TypeOfDocument();
-        Privileges privileges = new Privileges();
-        privileges.setCoeffSign((long) 1);
-        privileges.setPriority(document.getPrior());
-        privileges.setSale(document.getSale());
-        typeOfDocument.setInstanceId((long) 1);
-        typeOfDocument.setName(document.getName());
-        long id3 = -1;
-        List<Privileges> priv = privilegesService.getAll(document.getSale());
-        for (Privileges priveleg : priv) {
-            if (priveleg.getPriority() == document.getPrior() && privileges.getSale() == document.getSale())
-                id3 = priveleg.getId();
-        }
-        if (id3 == -1) {
+        Document documentToAdd = Document.builder()
+                .userId(userId)
+                .dateOfIssue(document.getIssueDate())
+                .issuedByWhom(document.getIssuedBy())
+                .parametersId(null)
+                .build();
+        TypeOfDocument typeOfDocument = TypeOfDocument.builder()
+                .instanceId(1L)
+                .name(document.getName())
+                .build();
+        Privileges privileges = Privileges.builder()
+                .coeffSign(1L)
+                .priority(document.getPriority())
+                .sale(document.getSale())
+                .build();
+        List<Privileges> privilegesList = privilegesService.getAll(document.getSale());
+        Optional<Privileges> optionalPrivileges = privilegesList.stream()
+                .filter(p -> p.getPriority() == document.getPriority()).findAny();
+        if (!optionalPrivileges.isPresent()) {
             privilegesService.addPrivileges(privileges);
-            List<Privileges> privv = privilegesService.getAll(document.getSale());
-            for (Privileges priveleg : privv) {
-                if (priveleg.getPriority() == document.getPrior() && privileges.getSale() == document.getSale())
-                    id3 = priveleg.getId();
-            }
+            typeOfDocument.setPrivilegesId(privileges.getId());
         }
-        typeOfDocument.setPrivilegesId(id3);
-        long id2 = -1;
-        List<TypeOfDocument> somelist = typeOfDocumentService.getTypes(1);
-        for (TypeOfDocument typeOfDocuments : somelist) {
-            if (typeOfDocuments.getName().equals(document.getName()))
-                id2 = typeOfDocuments.getId();
+        else{
+            typeOfDocument.setPrivilegesId(optionalPrivileges.get().getId());
         }
-        if (id2 == -1) {
+        List<TypeOfDocument> typeOfDocuments = typeOfDocumentService.getTypes(1);
+        Optional<TypeOfDocument> optionalTypeOfDocument = typeOfDocuments.stream()
+                .filter(t -> t.getName().equals(document.getName()))
+                .findFirst();
+        if (!optionalTypeOfDocument.isPresent()) {
             typeOfDocumentService.addTypeOfDocument(typeOfDocument);
-            List<TypeOfDocument> somelistt = typeOfDocumentService.getTypes(1);
-            for (TypeOfDocument typeOfDocuments : somelistt) {
-                if (typeOfDocuments.getName().equals(document.getName()))
-                    id2 = typeOfDocuments.getId();
-            }
+            documentToAdd.setTypeOfDocumentId(typeOfDocument.getId());
         }
-        documentToAdd.setTypeOfDocumentId(id2);
-        documentToAdd.setUserId(userId);
-        documentToAdd.setDateOfIssue(document.getDate1());
-        documentToAdd.setIssuedByWhom(document.getBywhom());
-        documentToAdd.setParametersId(null);
+        else{
+            documentToAdd.setTypeOfDocumentId(optionalTypeOfDocument.get().getId());
+        }
         Boolean status = documentService.addDocument(documentToAdd);
         if(status){
             return new ResponseEntity<>(HttpStatus.OK);

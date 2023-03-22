@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import main.database.entity.Production;
 import main.database.entity.TypeOfDocument;
 import main.database.service.entity_service.*;
-import main.entity.Shop;
+import main.entity.responce.Shop;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,21 +23,27 @@ public class ShopAgregatorService {
 
     public ResponseEntity<List<Shop>> getShopsByDocumentName(String name) {
         log.info("Поступил запрос на получение магазинов, где есть справка name = {}", name);
+        if(!typeOfDocumentService.isPresentByName(name)){
+            log.error("Такого документа не существует");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         TypeOfDocument typeOfDocument = typeOfDocumentService.getByName(name);
-        Long id = typeOfDocument.getId();
-        List<Production> productions = productionService.getProductionByType(id);
-        Shop shop;
+        List<Production> productions = productionService.getProductionByType(typeOfDocument.getId());
         List<Shop> shops = new ArrayList<>();
+        log.info("Приступаю к заполнению информации о магазинах");
         for (Production production : productions) {
-            shop = new Shop();
-            shop.setCost(production.getCost());
-            shop.setId(production.getBookkeepingId());
-            shop.setQuantity(production.getQuantity());
-            System.out.println(production.getId());
-            String s = String.format("%d:%02d:%02d", production.getTime().getSeconds() / 3600, (production.getTime().getSeconds() % 3600)
-                    / 60, (production.getTime().getSeconds() % 60));
-            System.out.println(s);
-            shop.setTime(s);
+            Shop shop = Shop.builder()
+                    .cost(production.getCost())
+                    .shopId(production.getBookkeepingId())
+                    .quantity(production.getQuantity())
+                    .time(String.format
+                            ("%d:%02d:%02d",
+                                    production.getTime().getSeconds() / 3600,
+                                    (production.getTime().getSeconds() % 3600) / 60,
+                                    (production.getTime().getSeconds() % 60)
+                            )
+                    )
+                    .build();
             shops.add(shop);
         }
         return new ResponseEntity<>(shops, HttpStatus.OK);

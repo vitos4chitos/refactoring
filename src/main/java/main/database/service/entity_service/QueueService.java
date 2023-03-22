@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import main.database.entity.*;
 import main.database.repository.*;
-import main.entity.BackQueue;
-import main.entity.FirstUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,8 +20,6 @@ public class QueueService {
 
 
     private final QueueRepository queueRepository;
-    private final OfficialRepository officialRepository;
-    private final UserRepository userRepository;
 
     private Optional<Queue> getQueueById(Long id) {
         return queueRepository.getQueueById(id);
@@ -79,6 +75,11 @@ public class QueueService {
     }
 
     public void putInQueue(Long userId, Long officialId) {
+        log.info("Добавляю пользователя id = {} в очередь officailId = {}", userId, officialId);
         queueRepository.putInQueue(userId, officialId);
+    }
+
+    public void putInQueue(User user, List<Official> officials){
+        officials.forEach(of -> putInQueue(user.getId(), of.getId()));
     }
 }

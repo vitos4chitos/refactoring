@@ -7,15 +7,16 @@ import main.database.entity.Official;
 import main.database.entity.Parameter;
 import main.database.entity.Signature;
 import main.database.service.entity_service.*;
-import main.entity.BaseAnswer;
-import main.entity.ErrorAnswer;
-import main.entity.Sign;
+import main.entity.responce.BaseAnswer;
+import main.entity.responce.ErrorAnswer;
+import main.entity.request.SignatureRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,35 +28,33 @@ public class SignatureAgregatorService {
     private final QueueService queueService;
     private final SignaturesService signaturesService;
 
-    public ResponseEntity<BaseAnswer> makeSign(Sign sign) {
+    public ResponseEntity<BaseAnswer> makeSign(SignatureRequest sign) {
         log.info("Поступил запрос на подпись: {}", sign);
-        Official official = officialService.getOfficialByLogin(sign.getLoginOff());
+        Official official = officialService.getOfficialByLogin(sign.getOfficialLogin());
         if(official == null){
-            return new ResponseEntity<>(ErrorAnswer
+            return new ResponseEntity<>(
+                    ErrorAnswer
                     .builder()
-                    .message("OfficialNotFound").build(), HttpStatus.UNPROCESSABLE_ENTITY);
+                    .message("OfficialNotFound").build(),
+                    HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        log.info("Заполняю документы");
+        log.info("Делаю выборку документов");
         List<Document> documentList = documentService.getAllDocumentsByUserId(sign.getUserId());
-        log.info("Заполняю параметры");
+        log.info("Делаю выборку параметров");
         List<Parameter> parameters = new ArrayList<>();
         documentList.stream()
                 .filter(d -> d.getParametersId() != null)
                 .forEach(d -> parameters.add(parameterService.getByParameterId(d.getParametersId())));
-        log.info("Заполняю подписи");
-        List<Signature> signatures;
-        boolean flag = false;
+        log.info("Ставлю подпись");
         for (Parameter value : parameters) {
-            signatures = signaturesService.getSignsById(value.getId());
-            for (Signature signature : signatures) {
-                if (signature.getOfficialId().equals(official.getId()) && !signature.getIsSubscribed()) {
-                    Long idSign = signature.getId();
-                    signaturesService.save(idSign);
-                    flag = true;
-                }
-                if (flag) break;
+            List<Signature> signatures = signaturesService.getSignsById(value.getId());
+            Optional<Signature> optional =signatures.stream()
+                    .filter(signature -> signature.getOfficialId().equals(official.getId()) && !signature.getIsSubscribed())
+                    .findFirst();
+            if(optional.isPresent()){
+                signaturesService.save(optional.get().getId());
+                break;
             }
-            if (flag) break;
         }
         queueService.advanceQueue(official.getId());
         return new ResponseEntity<>(HttpStatus.OK);
