@@ -117,7 +117,7 @@ public class DocumentAgregatorService {
     }
 
     public ResponseEntity<BaseAnswer> getDocuments(String login) {
-        log.info("Поступил запрос на получение документов на покупку для пользователя Login = {}", login);
+        log.info("Поступил запрос на получение документов на покупку для пользователя login = {}", login);
         long id = userService.getUserId(login);
         if(id == -1){
             log.error("Пользователь не найден");
