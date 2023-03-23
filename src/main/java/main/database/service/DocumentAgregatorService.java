@@ -67,6 +67,7 @@ public class DocumentAgregatorService {
                 List<Official> officials = officialService.getOfficialByInstanceId(user.getInstanceId());
                 log.info("Все должностные лица на участке: {}", officials);
                 if (officials.size() >= 3) {
+                    parameterService.save(parameterOne);
                     signatureService.save(List.of(
                             Signature.builder()
                                 .isSubscribed(false)
@@ -100,9 +101,14 @@ public class DocumentAgregatorService {
                     parameterService.save(parameterOne);
                     return new ResponseEntity<>(HttpStatus.OK);
                 }
+                else{
+                    log.error("Недостаточно оф. лиц на участке");
+                    return new ResponseEntity<>(new ErrorAnswer("NotMuchOfficials"), HttpStatus.BAD_REQUEST);
+                }
             }
             else{
-                return new ResponseEntity<>(new ErrorAnswer("NotMuchOfficials"), HttpStatus.BAD_REQUEST);
+                log.error("Недостаточно средств на счету у пользователя");
+                return new ResponseEntity<>(new ErrorAnswer("NotEnoughMoney"), HttpStatus.BAD_REQUEST);
             }
         }
         log.error("Пользователь не найден");
@@ -111,6 +117,7 @@ public class DocumentAgregatorService {
     }
 
     public ResponseEntity<BaseAnswer> getDocuments(String login) {
+        log.info("Поступил запрос на получение документов на покупку для пользователя Login = {}", login);
         long id = userService.getUserId(login);
         if(id == -1){
             log.error("Пользователь не найден");
@@ -218,16 +225,8 @@ public class DocumentAgregatorService {
         log.info("Начинаю поиск недостающих документов");
         List<TypeOfDocument> typeOfDocuments = typeOfDocumentService
                 .getAllTypeOfDocumentByInstanceId(user.getInstanceId());
-        List<TypeOfDocument> ans = new ArrayList<>();
-        for (TypeOfDocument td : typeOfDocuments) {
-            boolean flag = documentService.existsDocumentByTypeOfDocumentIdAndUserId(td.getId(), userId);
-            System.out.println(flag);
-            if (!flag) {
-                ans.add(td);
-            }
-        }
         return new ResponseEntity<>(typeOfDocuments.stream()
-                .filter(td -> documentService.existsDocumentByTypeOfDocumentIdAndUserId(td.getId(), userId))
+                .filter(td -> !documentService.existsDocumentByTypeOfDocumentIdAndUserId(td.getId(), userId))
                 .collect(Collectors.toList()), HttpStatus.OK);
     }
 
